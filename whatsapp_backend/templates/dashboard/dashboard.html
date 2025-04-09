@@ -1,0 +1,158 @@
+{% extends 'layouts/apps.html' %}
+{% load static %}
+
+
+{% block content %}
+<style>
+  .c-dashboardInfo {
+    margin-bottom: 15px;
+  }
+  .c-dashboardInfo .wrap {
+    background: #ffffff;
+    box-shadow: 2px 10px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 7px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    padding: 40px 25px 20px;
+    height: 100%;
+  }
+  .c-dashboardInfo__title,
+  .c-dashboardInfo__subInfo {
+    color: #6c6c6c;
+    font-size: 1.18em;
+  }
+  .c-dashboardInfo span {
+    display: block;
+  }
+  .c-dashboardInfo__count {
+    font-weight: 600;
+    font-size: 2.5em;
+    line-height: 64px;
+    color: #323c43;
+  }
+  .c-dashboardInfo .wrap:after {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    content: "";
+  }
+  
+  .c-dashboardInfo:nth-child(1) .wrap:after {
+    background: linear-gradient(82.59deg, #00c48c 0%, #00a173 100%);
+  }
+  .c-dashboardInfo:nth-child(2) .wrap:after {
+    background: linear-gradient(81.67deg, #0084f4 0%, #1a4da2 100%);
+  }
+  .c-dashboardInfo:nth-child(3) .wrap:after {
+    background: linear-gradient(69.83deg, #0084f4 0%, #00c48c 100%);
+  }
+  .c-dashboardInfo:nth-child(4) .wrap:after {
+    background: linear-gradient(81.67deg, #ff647c 0%, #1f5dc5 100%);
+  }
+  .c-dashboardInfo__title svg {
+    color: #d7d7d7;
+    margin-left: 5px;
+  }
+  .MuiSvgIcon-root-19 {
+    fill: currentColor;
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    font-size: 24px;
+    transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  
+</style>
+<!--begin::Content wrapper-->
+<div class="d-flex flex-column flex-column-fluid">
+  <!--begin::Toolbar-->
+  <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+
+    <!--begin::Toolbar container-->
+    <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+      <!--begin::Page title-->
+      <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+        <!--begin::Title-->
+        <h1
+          class="page-heading d-flex text-dark fw-bold fs-3 flex-column justify-content-center my-0">
+          Dashboard</h1>
+        <!--end::Title-->
+        <!--begin::Breadcrumb-->
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+          <!--begin::Item-->
+          <li class="breadcrumb-item text-muted">
+            <a href="" class="text-muted text-hover-primary">Home</a>
+          </li>
+          <!--end::Item-->
+          <!--begin::Item-->
+          <li class="breadcrumb-item">
+            <span class="bullet bg-gray-400 w-5px h-2px"></span>
+          </li>
+          <!--end::Item-->
+          <!--begin::Item-->
+          <li class="breadcrumb-item text-muted">Dashboard</li>
+          <!--end::Item-->
+        </ul>
+        <!--end::Breadcrumb-->
+      </div>
+      <!--end::Page title-->
+    </div>  
+    
+    <!--end::Toolbar container-->
+  </div>
+  <div id="root">
+    <div class="container pt-5">
+      <div class="row align-items-stretch">
+        <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <!-- <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Projects<svg -->
+                <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Today WhatsApp<svg
+                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
+                <path fill="none" d="M0 0h24v24H0z"></path>
+              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_project}}</span><span
+              {% comment %} class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'home:our.services-view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span> {% endcomment %}
+          </div>
+        </div>
+        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Opening Jobs<svg
+                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
+                <path fill="none" d="M0 0h24v24H0z"></path>
+              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_jobs}}</span><span
+              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'career:job.vacancy.view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
+          </div>
+        </div> {% endcomment %}
+        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <!-- <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Clients<svg -->
+              <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Job Application<svg
+                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
+                <path fill="none" d="M0 0h24v24H0z"></path>
+              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_job_application}}</span><span
+              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'career:job-application.view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
+          </div>
+        </div> {% endcomment %}
+        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Blogs<svg
+                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
+                <path fill="none" d="M0 0h24v24H0z"></path>
+              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_blogs}}</span><span
+              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href="{% url 'blog:blog-view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i><a></span>
+          </div>
+        </div> {% endcomment %}
+      </div>
+    </div>
+  </div>
+
+</div>
+<!--end::Content wrapper-->
+
+{% endblock content %}
+  

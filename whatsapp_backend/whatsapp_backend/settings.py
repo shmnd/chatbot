@@ -33,7 +33,8 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -48,6 +49,9 @@ INSTALLED_APPS = [
 ]
 
 LOCAL_APPS = [
+    'authentication',
+    'dashboard',
+    'whatsapp',
 
 ]
 
@@ -72,7 +76,7 @@ ROOT_URLCONF = 'whatsapp_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -153,7 +157,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 LOGIN_URL = '/auth/login/'
 
-# AUTH_USER_MODEL  = 'authentication.Users'
+AUTH_USER_MODEL = 'authentication.Users'
 
 # Allow credentials (if using authentication)
 CORS_ALLOW_CREDENTIALS = True
