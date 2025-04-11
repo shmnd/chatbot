@@ -161,3 +161,8 @@ AUTH_USER_MODEL = 'authentication.Users'
 
 # Allow credentials (if using authentication)
 CORS_ALLOW_CREDENTIALS = True
+
+
+WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
+PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+print(WHATSAPP_TOKEN,PHONE_NUMBER_ID,'yoooooooooooooooooooooo')
