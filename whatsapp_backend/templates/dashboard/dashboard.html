@@ -75,25 +75,25 @@
   <div id="root">
     <div class="container pt-5">
       <div class="row align-items-stretch">
-        <div class="c-dashboardInfo col-lg-3 col-md-6">
+        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
             <!-- <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Projects<svg -->
                 <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Today WhatsApp<svg
                 class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
                 <path fill="none" d="M0 0h24v24H0z"></path>
               </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_project}}</span><span
-              {% comment %} class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'home:our.services-view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span> {% endcomment %}
+              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'home:our.services-view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span> 
           </div>
-        </div>
-        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
+        </div> {% endcomment %}
+        <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
-            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Opening Jobs<svg
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">All contacts<svg
                 class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
                 <path fill="none" d="M0 0h24v24H0z"></path>
               </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_jobs}}</span><span
-              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'career:job.vacancy.view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
+              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'whatsapp:contacts' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
           </div>
-        </div> {% endcomment %}
+        </div> 
         {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
             <!-- <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Clients<svg -->
