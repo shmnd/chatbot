@@ -56,7 +56,8 @@ LOCAL_APPS = [
 ]
 
 THIRD_PARTY_APP = [
-
+    'channels',
+    'bs4'
 ]
 
 INSTALLED_APPS = LOCAL_APPS + THIRD_PARTY_APP + INSTALLED_APPS

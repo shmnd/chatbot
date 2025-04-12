@@ -3,21 +3,7 @@
 {% block content %}
 
 <style>
-  .msg {
-    padding: 10px 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    max-width: 70%;
-    word-wrap: break-word;
-  }
-  .msg.sent {
-    background-color: #dcf8c6;
-    margin-left: auto;
-  }
-  .msg.received {
-    background-color: #ffffff;
-    margin-right: auto;
-  }
+  
   #kt_app_content_container {
     margin-left: 225px; 
     transition: margin-left 0.3s ease;
@@ -38,19 +24,61 @@
     padding: 0.75rem 1rem;
     min-height: auto !important;
   }
+
+  #chatBox {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow-y: auto;
+    background-color: #ece5dd;
+    padding: 20px;
+    height: 100%;
+  }
+
+  
   .msg {
     padding: 10px 15px;
     border-radius: 12px;
     margin-bottom: 10px;
-    max-width: 70%;
+    max-width: 60%;
     word-wrap: break-word;
-    color: black; /* 👈 add this */
+    display: inline-block;
+    box-sizing: border-box;
   }
+  
+  .msg.sent {
+    background-color: #dcf8c6;
+    align-self: flex-end;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+  }
+  
+
+  .msg.received {
+    background-color: #ffffff;
+    align-self: flex-start;
+    text-align: right;
+    flex-direction: column;
+  }
+  
+  .msg.sent * {
+    text-align: right;
+  }
+  
+  .timestamp {
+    font-size: 12px;
+    color: gray;
+    margin-top: 5px;
+  }
+  
   .msg .text-end {
     font-size: 11px;
     text-align: right;
     margin-top: 4px;
   }
+
+
 </style>
 
 <div class="d-flex flex-column flex-column-fluid">
@@ -94,21 +122,18 @@
                 </div>
               </div>
 
-              <div class="flex-grow-1 p-4" id="chatBox" style="overflow-y: auto; background-color: #ece5dd;">
+              <div id="chatBox">
                 {% for message in messages %}
-                <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
-                    {{ message.clean_body }}
-                    <div class="text-end small text-muted mt-1" style="font-size: 11px;">
-                        {{ message.timestamp }}
-                        {% if message.msg_status == 1 %}
-                            <span style="color: blue;">&#10003;&#10003;</span>  <!-- double tick -->
-                        {% endif %}
+                    <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
+                        <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
+                            {{ message.clean_body|safe }}
+                            <div class="timestamp">Time: {{ message.timestamp }}</div>
+                        </div>
                     </div>
-                </div>
                 {% empty %}
-                    <div class="text-muted">No messages yet. Select a contact to begin.</div>
+                  <div class="text-muted">No messages yet. Select a contact to begin.</div>
                 {% endfor %}
-              </div>
+              </div>    
 
               <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
                 {% csrf_token %}

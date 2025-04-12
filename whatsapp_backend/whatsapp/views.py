@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 # Create your views here.
 class WhatsappHomePageView(LoginRequiredMixin, View):
     def get(self, request):
-        phone = request.GET.get("phone")
+        phone = request.GET.get("phone","").strip()
         messages = []
 
         if phone:
@@ -28,7 +28,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
 
                 # Normalize keys so the template can render them
                 for m in messages:
-                    m["msg_status"] = int(m.get("msgstatus", 0))
+                    m["msg_status"] = int(m.get("msg_status", 0))
                     raw = m.get("msg_body", "")
                     
                     # Extract the message without HTML
@@ -40,8 +40,11 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
             "messages": messages,
             "user_phone": phone,
             "user_name": phone,
-            'headers':headers  
         })
+        
+        
+    
+    
 
 
     def post(self, request):
