@@ -3,23 +3,25 @@
 {% block content %}
 
 <style>
-  
   #kt_app_content_container {
-    margin-left: 225px; 
-    transition: margin-left 0.3s ease;
-    width: calc(100% - 225px);
-    max-width: 100%;
-    overflow-x: hidden;
+    margin-left: 0 !important;
+    width: 100% !important;
   }
+
   body[data-kt-app-sidebar-minimize="on"] #kt_app_content_container {
     margin-left: 60px;
     width: calc(100% - 80px);
   }
-  @media (max-width: 991px) {
-    #kt_app_content_container {
-      margin-left: 0 !important;
+
+  @media (max-width: 768px) {
+    .flex-wrap-on-mobile {
+      flex-direction: column !important;
+    }
+    #chatBox {
+      height: 50vh !important;
     }
   }
+
   .card-header {
     padding: 0.75rem 1rem;
     min-height: auto !important;
@@ -32,10 +34,9 @@
     overflow-y: auto;
     background-color: #ece5dd;
     padding: 20px;
-    height: 100%;
+    height: 75vh;
   }
 
-  
   .msg {
     padding: 10px 15px;
     border-radius: 12px;
@@ -45,111 +46,72 @@
     display: inline-block;
     box-sizing: border-box;
   }
-  
+
   .msg.sent {
     background-color: #dcf8c6;
-    align-self: flex-end;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
+    text-align: right;
   }
-  
 
   .msg.received {
     background-color: #ffffff;
-    align-self: flex-start;
-    text-align: right;
-    flex-direction: column;
+    text-align: left;
   }
-  
-  .msg.sent * {
-    text-align: right;
-  }
-  
+
   .timestamp {
     font-size: 12px;
     color: gray;
     margin-top: 5px;
   }
-  
-  .msg .text-end {
-    font-size: 11px;
-    text-align: right;
-    margin-top: 4px;
-  }
-
-
 </style>
 
-<div class="d-flex flex-column flex-column-fluid">
-  <div id="kt_app_content" class="app-content flex-column-fluid pb-0">
-    <div id="kt_app_content_container" class="app-container container-xxl">
-
-      <div class="card card-flush">
-        <div class="card-header">
-          <div class="card-title">
-            <h2>WhatsApp Chat Interface</h2>
-          </div>
-        </div>
-
-        <div class="card-body px-0 pt-0 pb-0">
-          <div class="d-flex" style="height: 75vh; overflow: hidden;">
-
-            <!-- Left: Chat List -->
-            <div class="d-flex flex-column" style="width: 300px; border-right: 1px solid #ddd; background-color: #f8f9fa;">
-              <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-                <strong class="ps-2">Chats</strong>
-                <a href="#" class="btn btn-sm btn-warning me-2">New Chat</a>
-              </div>
-              <div class="p-3 d-flex">
-                <form method="get" class="d-flex w-100">
-                  <input type="text" name="phone" class="form-control me-2" placeholder="Search...">
-                  <button class="btn btn-warning">Go</button>
-                </form>
-              </div>
-              <div style="overflow-y: auto; height: calc(100vh - 200px); padding-left:10px;">
-                <a href="?phone=918280276427" class="px-3 py-2 d-block chat-item border-bottom">Anshu<br><small>918280276427</small></a>
-                <a href="?phone=919834497712" class="px-3 py-2 d-block chat-item border-bottom">drvaibhayjagtap57<br><small>919834497712</small></a>
-              </div>
-            </div>
-
-            <!-- Right: Chat View -->
-            <div class="flex-grow-1 d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-                <div>
-                  <strong id="selectedUserName">{{ user_name|default:"Select a contact" }}</strong><br>
-                  <small id="selectedUserPhone">{{ user_phone|default:"Waiting..." }}</small>
-                </div>
-              </div>
-
-              <div id="chatBox">
-                {% for message in messages %}
-                    <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
-                        <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
-                            {{ message.clean_body|safe }}
-                            <div class="timestamp">Time: {{ message.timestamp }}</div>
-                        </div>
-                    </div>
-                {% empty %}
-                  <div class="text-muted">No messages yet. Select a contact to begin.</div>
-                {% endfor %}
-              </div>    
-
-              <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
-                {% csrf_token %}
-                <label for="fileUpload" class="btn btn-outline-secondary mb-0">📎</label>
-                <input type="file" name="attachment" id="fileUpload" hidden>
-                <input type="text" name="message" class="form-control mx-2" placeholder="Type a message..." required>
-                <button class="btn btn-success" type="submit">Send</button>
-              </form>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
+<div class="d-flex flex-wrap flex-wrap-on-mobile" style="height: 100vh; overflow: hidden;">
+  <!-- Sidebar -->
+  <div class="bg-light p-2" style="width: 300px; flex-shrink: 0; border-right: 1px solid #ddd;">
+    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+      <strong class="ps-2">Chats</strong>
+      <a href="#" class="btn btn-sm btn-warning me-2">New Chat</a>
     </div>
+    <div class="p-3 d-flex">
+      <form method="get" class="d-flex w-100">
+        <input type="text" name="phone" class="form-control me-2" placeholder="Search...">
+        <button class="btn btn-warning">Go</button>
+      </form>
+    </div>
+    <div style="overflow-y: auto; height: calc(100vh - 200px); padding-left:10px;">
+      <a href="?phone=918280276427" class="px-3 py-2 d-block chat-item border-bottom">Anshu<br><small>918280276427</small></a>
+      <a href="?phone=919834497712" class="px-3 py-2 d-block chat-item border-bottom">drvaibhayjagtap57<br><small>919834497712</small></a>
+    </div>
+  </div>
+
+  <!-- Chat Content -->
+  <div class="flex-grow-1 d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+      <div>
+        <strong id="selectedUserName">{{ user_name|default:"Select a contact" }}</strong><br>
+        <small id="selectedUserPhone">{{ user_phone|default:"Waiting..." }}</small>
+      </div>
+    </div>
+
+    <div id="chatBox">
+      {% for message in messages %}
+        <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
+          <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
+            {{ message.clean_body|safe }}
+            <div class="timestamp">Time: {{ message.timestamp }}</div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-muted">No messages yet. Select a contact to begin.</div>
+      {% endfor %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
+      {% csrf_token %}
+      <label for="fileUpload" class="btn btn-outline-secondary mb-0">📎</label>
+      <input type="file" name="attachment" id="fileUpload" hidden>
+      <input type="text" name="message" class="form-control mx-2" placeholder="Type a message..." required>
+      <button class="btn btn-success" type="submit">Send</button>
+    </form>
   </div>
 </div>
 
