@@ -17,24 +17,6 @@
     .flex-wrap-on-mobile {
       flex-direction: column !important;
     }
-    #chatBox {
-      height: 50vh !important;
-    }
-  }
-
-  .card-header {
-    padding: 0.75rem 1rem;
-    min-height: auto !important;
-  }
-
-  #chatBox {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    overflow-y: auto;
-    background-color: #ece5dd;
-    padding: 20px;
-    height: 75vh;
   }
 
   .msg {
@@ -64,61 +46,126 @@
   }
 </style>
 
-<div class="d-flex flex-wrap flex-wrap-on-mobile" style="height: 100vh; overflow: hidden;">
-  <!-- Sidebar -->
-  <div class="bg-light p-2" style="width: 300px; flex-shrink: 0; border-right: 1px solid #ddd;">
-    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-      <strong class="ps-2">Chats</strong>
-      <a href="#" class="btn btn-sm btn-warning me-2">New Chat</a>
+<div class="d-flex flex-column" style="height: 100vh;">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+    <div class="d-flex flex-column">
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="mb-0" style="font-size: 1.5rem;">
+            <strong id="selectedUserName">{{ user_name|default:user_phone }}</strong>
+            </h1>
+            {% if user_exists %}
+            <span title="Edit Name" class="text-primary" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#editContactModal">✏️</span>
+            {% else %}
+            <span title="Save Contact" class="text-success" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#saveContactModal">➕</span>
+            {% endif %}
+        </div>
     </div>
-    <div class="p-3 d-flex">
-      <form method="get" class="d-flex w-100">
-        <input type="text" name="phone" class="form-control me-2" placeholder="Search...">
-        <button class="btn btn-warning">Go</button>
-      </form>
-    </div>
-    <div style="overflow-y: auto; height: calc(100vh - 200px); padding-left:10px;">
-      <a href="?phone=918280276427" class="px-3 py-2 d-block chat-item border-bottom">Anshu<br><small>918280276427</small></a>
-      <a href="?phone=919834497712" class="px-3 py-2 d-block chat-item border-bottom">drvaibhayjagtap57<br><small>919834497712</small></a>
-    </div>
-  </div>
-
-  <!-- Chat Content -->
-  <div class="flex-grow-1 d-flex flex-column">
-    <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-      <div>
-        <strong id="selectedUserName">{{ user_name|default:"Select a contact" }}</strong><br>
-        <small id="selectedUserPhone">{{ user_phone|default:"Waiting..." }}</small>
+  
+    <div class="text-end">
+      <div class="text-muted" style="font-size: 0.9rem;">
+        {{ user_phone|default:"Waiting..." }}
       </div>
     </div>
+  </div>
+  
 
-    <div id="chatBox">
-      {% for message in messages %}
-        <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
-          <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
-            {{ message.clean_body|safe }}
-            <div class="timestamp">Time: {{ message.timestamp }}</div>
-          </div>
+  <!-- Main Body -->
+    <div class="d-flex flex-grow-1 overflow-hidden">
+    <!-- Sidebar -->
+        <div class="bg-light p-2" style="width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ddd;">
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+            <strong class="ps-2">Chats</strong>
+            <a href="#" class="btn btn-sm btn-warning me-2">New Chat</a>
         </div>
-      {% empty %}
-        <div class="text-muted">No messages yet. Select a contact to begin.</div>
-      {% endfor %}
+        <div class="p-3 d-flex">
+            <form method="get" class="d-flex w-100">
+            <input type="text" name="phone" class="form-control me-2" placeholder="Search...">
+            <button class="btn btn-warning">Go</button>
+            </form>
+        </div>
+        <div style="padding-left:10px;">
+            {% for chat in chat_users %}
+            <a href="?phone={{ chat.user_num }}" class="px-3 py-2 d-block chat-item border-bottom">
+                {{ chat.user_name|default:chat.user_num }}<br><small>{{ chat.user_num }}</small>
+            </a>
+            {% endfor %}
+        </div>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
-      {% csrf_token %}
-      <label for="fileUpload" class="btn btn-outline-secondary mb-0">📎</label>
-      <input type="file" name="attachment" id="fileUpload" hidden>
-      <input type="text" name="message" class="form-control mx-2" placeholder="Type a message..." required>
-      <button class="btn btn-success" type="submit">Send</button>
-    </form>
+    <!-- Chat Panel -->
+    <div class="flex-grow-1 d-flex flex-column">
+      <!-- Chat Box -->
+      <div id="chatBox" class="flex-grow-1 overflow-auto p-4" style="background-color: #ece5dd;">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
+              <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
+                {% if message.file_url %}
+                  {% with message.mime_type|default_if_none:'' as mime %}
+                    {% if 'image' in mime %}
+                      <img src="{{ message.file_url }}" class="img-fluid rounded mt-2" style="max-width: 300px;">
+                    {% elif 'video' in mime %}
+                      <video controls class="mt-2" style="max-width: 300px;">
+                        <source src="{{ message.file_url }}" type="{{ mime }}">
+                      </video>
+                    {% elif 'audio' in mime %}
+                      <audio controls class="mt-2">
+                        <source src="{{ message.file_url }}" type="{{ mime }}">
+                      </audio>
+                    {% elif 'application' in mime or 'doc' in mime or 'pdf' in mime %}
+                      <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 Download Document</a>
+                    {% else %}
+                      <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary mt-2">📎 View File</a>
+                    {% endif %}
+                  {% endwith %}
+                {% else %}
+                  {{ message.clean_body|safe }}
+                {% endif %}
+                <div class="timestamp">Time: {{ message.timestamp }} — 
+                  {% if message.msg_status == 1 %}sent{% elif message.msg_status == 2 %}delivered{% elif message.msg_status == 3 %}read{% else %}received{% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-muted py-5">No messages yet. Start the conversation below 👇</div>
+        {% endif %}
+      </div>
+
+      <!-- Message Input -->
+      <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
+        {% csrf_token %}
+        <div class="dropdown me-2">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="mediaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-paperclip fa-lg"></i>
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="mediaDropdown">
+            <li><label class="dropdown-item" for="uploadImage"><i class="fas fa-image me-2"></i>Image</label></li>
+            <li><label class="dropdown-item" for="uploadVideo"><i class="fas fa-video me-2"></i>Video</label></li>
+            <li><label class="dropdown-item" for="uploadAudio"><i class="fas fa-microphone me-2"></i>Audio</label></li>
+            <li><label class="dropdown-item" for="uploadDoc"><i class="fas fa-file-alt me-2"></i>Document</label></li>
+          </ul>
+          <input type="file" name="attachment" id="uploadImage" accept="image/*" hidden onchange="submitOnSelect(this)">
+          <input type="file" name="attachment" id="uploadVideo" accept="video/*" hidden onchange="submitOnSelect(this)">
+          <input type="file" name="attachment" id="uploadAudio" accept="audio/*" hidden onchange="submitOnSelect(this)">
+          <input type="file" name="attachment" id="uploadDoc" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden onchange="submitOnSelect(this)">
+        </div>
+        <input type="text" name="message" class="form-control mx-2" placeholder="Type a message...">
+        <button class="btn btn-success" type="submit">Send</button>
+      </form>
+    </div>
   </div>
 </div>
 
+<!-- Scroll to bottom -->
 <script>
   const chatBox = document.getElementById("chatBox");
-  if (chatBox) {
-    chatBox.scrollTop = chatBox.scrollHeight;
+  if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+  function submitOnSelect(input) {
+    const form = input.closest("form");
+    if (form) form.submit();
   }
 </script>
 
