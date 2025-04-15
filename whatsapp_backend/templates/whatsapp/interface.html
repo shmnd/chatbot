@@ -50,9 +50,9 @@
   <!-- Header -->
   <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
     <div class="d-flex flex-column">
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center" style="margin-left: 300px;">
             <h1 class="mb-0" style="font-size: 1.5rem;">
-            <strong id="selectedUserName">{{ user_name|default:user_phone }}</strong>
+                <strong id="selectedUserName">{{ user_name|default:user_phone }}</strong>
             </h1>
             {% if user_exists %}
             <span title="Edit Name" class="text-primary" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#editContactModal">✏️</span>

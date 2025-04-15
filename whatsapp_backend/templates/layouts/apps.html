@@ -49,8 +49,7 @@
 
 					{% block content %}{% endblock content %}
 
-					<!--begin::Footer-->
-					{% include 'layouts/footer.html' %}
+					
 					
 					<!--end::Footer-->
 				</div>
@@ -101,6 +100,15 @@
 		src="{% static 'assets/plugins/custom/vis-timeline/vis-timeline.bundle.js' %}?time={% now 'h:i:s' %}"></script>
 	<!--end::Vendors Javascript-->
 	<!--end::Javascript-->
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const toggle = document.querySelector('#kt_app_sidebar_toggle');
+			if (toggle) {
+				toggle.click();  // ✅ Force Metronic to handle the toggle (minimize sidebar)
+			}
+		});
+	</script>
 
 	<script>
 		$.ajaxSetup({
