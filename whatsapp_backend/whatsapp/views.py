@@ -8,13 +8,13 @@ from django.shortcuts import render,redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from whatsapp.service.whatsapp_api import fetch_contact
 from django.core.paginator import Paginator
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect,HttpResponse
 from bs4 import BeautifulSoup
 from whatsapp.models import whatsappUsers,WhatsAppMessage
 from django.conf import settings
 from datetime import datetime
 from django.urls import reverse
-
+from urllib.parse import quote
 # Create your views here.
 
 class WhatsappHomePageView(LoginRequiredMixin, View):
@@ -77,6 +77,9 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 file_type,_ = mimetypes.guess_type(attachment.name)
                 file_name = slugify(os.path.splitext(attachment.name)[0]) + os.path.splitext(attachment.name)[1]
 
+                if not file_type:
+                    HttpResponse("Unsupported file type", status=400)
+
                 temp_dir = tempfile.gettempdir()
                 file_path = os.path.join(temp_dir,file_name)
                 with open(file_path,"wb+") as f:
@@ -98,28 +101,89 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 if upload_res.status_code == 200:
                     uploaded_data = upload_res.json()
                     uploaded_url = uploaded_data.get("url") # Adjust based on real response
+
+                    if not uploaded_url:
+                        return HttpResponse("Upload failed. No file URL returned.", status=500)
                     
                     # Determine media type
                     if file_type.startswith("image/"):
-                        media_type = "image"
+                        msg_type = "image"
                     elif file_type.startswith("video/"):
-                        media_type = "video"
+                        msg_type = "video"
                     elif file_type.startswith("audio/"):
-                        media_type = "audio"
+                        msg_type = "audio"
                     else:
-                        media_type = "document"
-                    
-                    # Send media using single API
-                    send_url = f"https://dynoble.com/app/API/sendmedia.php?userphone={phone}&type={media_type}&media_url={uploaded_url}"
+                        msg_type = "document"
+
+                    # Step 3: Send via WhatsApp Cloud API
+                    WA_URL = f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages"
+                    WA_HEADERS = {
+                        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                        "Content-Type": "application/json"
+                    }
+                    wa_payload = {
+                        "messaging_product": "whatsapp",
+                        "to": phone,
+                        "type": msg_type,
+                        msg_type: {
+                            "link": uploaded_url
+                        }
+                    }
+                    if message:
+                        wa_payload[msg_type]["caption"] = message
+
+                    send_res = requests.post(WA_URL, json=wa_payload, headers=WA_HEADERS)
+                    print("SEND STATUS:", send_res.status_code)
+                    print("SEND RESPONSE:", send_res.text)
+
+                    # Step 4: Save to DB
+                    timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    status = "1"
+                    color = "#03ac37" if status == "read" else "blue"
+
+                    if msg_type == "image":
+                        msg_body = f'<img src="{uploaded_url}" >'
+                    elif msg_type == "video":
+                        msg_body = f'<a href="{uploaded_url}" target="_blank">View video</a>'
+                    elif msg_type == "audio":
+                        msg_body = f'<a href="{uploaded_url}" target="_blank">Listen audio</a>'
+                    else:
+                        msg_body = f'<a href="{uploaded_url}" target="_blank">View document</a>'
 
                     if message:
-                        send_url += f"&caption={message}"
+                        msg_body += f'<p>{message}</p>'
 
-                    print('urlllllllllllllllllll')
-                    print("📦 Uploaded media URL:", uploaded_url)
-                    print("📤 Final send URL:", send_url)
+                    msg_body += (
+                        f'<p style="color:{color}; text-align:right; font-size:12px; margin-bottom:-5px;">'
+                        f'Time:{timestamp} Message: {status}</p>'
+                    )
 
-                    requests.get(send_url, headers=headers)
+                    WhatsAppMessage.objects.create(
+                        msg_body=msg_body,
+                        msg_status=1,
+                        msg_type=msg_type,
+                        status=status,
+                        local_date_time=timestamp,
+                        usernumber=phone,
+                        created_date=datetime.now(),
+                        modified_date=datetime.now(),
+                        msg_sent_by="1"
+                    )
+
+
+                    
+                    # Send media using single API
+                    # encoded_url = quote(uploaded_url, safe=':/')
+                    # send_url = f"https://dynoble.com/app/API/sendmedia.php?userphone={phone}&type={media_type}&media_url={uploaded_url}"
+
+                    # if message:
+                    #     send_url += f"&caption={quote(message)}"
+
+                    # print('urlllllllllllllllllll')
+                    # print("📦 Uploaded media URL:", uploaded_url)
+                    # print("📤 Final send URL:", send_url)
+
+                    # requests.get(send_url, headers=headers)
 
             elif message:   
                 # Send text message only
