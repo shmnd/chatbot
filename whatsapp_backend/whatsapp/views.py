@@ -10,11 +10,13 @@ from whatsapp.service.whatsapp_api import fetch_contact
 from django.core.paginator import Paginator
 from django.http import HttpResponseRedirect
 from bs4 import BeautifulSoup
-from whatsapp.models import whatsappUsers
+from whatsapp.models import whatsappUsers,WhatsAppMessage
 from django.conf import settings
 from datetime import datetime
 from django.urls import reverse
+
 # Create your views here.
+
 class WhatsappHomePageView(LoginRequiredMixin, View):
     def get(self, request):
         phone = request.GET.get("phone", "").strip()
@@ -62,124 +64,71 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
 
     def post(self, request):
         phone = request.GET.get("phone")
-        message = request.POST.get("message", "").strip()
-        attachment = request.FILES.get("attachment")
+        message = request.POST.get("message")
+        attachment = request.FILES.get('attachment')
 
-        PHONE_NUMBER_ID = settings.PHONE_NUMBER_ID
-        ACCESS_TOKEN = settings.WHATSAPP_TOKEN
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
 
-        if phone and attachment:
-            file_type, _ = mimetypes.guess_type(attachment.name)
-            print("Detected File Type:", file_type)
+        if phone:
+            if attachment:
 
-            filename = slugify(os.path.splitext(attachment.name)[0]) + os.path.splitext(attachment.name)[1]
-            temp_dir = tempfile.gettempdir()
-            file_path = os.path.join(temp_dir, filename)
-            print("Saving to:", file_path)
+                file_type,_ = mimetypes.guess_type(attachment.name)
+                file_name = slugify(os.path.splitext(attachment.name)[0]) + os.path.splitext(attachment.name)[1]
 
-            with open(file_path, "wb+") as f:
-                for chunk in attachment.chunks():
-                    f.write(chunk)
+                temp_dir = tempfile.gettempdir()
+                file_path = os.path.join(temp_dir,file_name)
+                with open(file_path,"wb+") as f:
+                    for chunks in attachment.chunks():
+                        f.write(chunks)
 
-            try:
-                upload_url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/media"
-                upload_headers = {
-                    "Authorization": f"Bearer {ACCESS_TOKEN}"
-                }
+                # Upload file to dynoble (replace with your real upload endpoint)
+                upload_url = "https://dynoble.com/sales_new/application/views/waba/media_v2.php"
 
-                with open(file_path, 'rb') as file_stream:
-                    files = {
-                        'file': (filename, file_stream),
-                        'type': (None, file_type or 'image/jpeg'),
-                        'messaging_product': (None, 'whatsapp')
-                    }
 
-                    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-                    print("Upload Status:", upload_response.status_code)
-                    print("Upload Response:", upload_response.text)
+                with open(file_path,'rb') as file_data:
+                    files = {'file':(file_name,file_data,file_type)}
+                    upload_res = requests.post(upload_url, files=files, headers=headers) 
 
-                    if upload_response.status_code == 200:
-                        media_id = upload_response.json().get("id")
-                        print(media_id,'idddddddddddddddddddddd')
+                print('resultttttttttt')
+                print("UPLOAD STATUS:", upload_res.status_code)
+                print("UPLOAD RESPONSE TEXT:", upload_res.text)
 
-                        send_url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
-                        send_headers = {
-                            "Authorization": f"Bearer {ACCESS_TOKEN}",
-                            "Content-Type": "application/json"
-                        }
+                if upload_res.status_code == 200:
+                    uploaded_data = upload_res.json()
+                    uploaded_url = uploaded_data.get("url") # Adjust based on real response
+                    
+                    # Determine media type
+                    if file_type.startswith("image/"):
+                        media_type = "image"
+                    elif file_type.startswith("video/"):
+                        media_type = "video"
+                    elif file_type.startswith("audio/"):
+                        media_type = "audio"
+                    else:
+                        media_type = "document"
+                    
+                    # Send media using single API
+                    send_url = f"https://dynoble.com/app/API/sendmedia.php?userphone={phone}&type={media_type}&media_url={uploaded_url}"
 
-                        media_type = file_type.split("/")[0] if file_type else "document"
+                    if message:
+                        send_url += f"&caption={message}"
 
-                        if media_type == "image":
-                            payload = {
-                                "messaging_product": "whatsapp",
-                                "recipient_type": "individual",
-                                "to": phone,
-                                "type": "image",
-                                "image": {
-                                    "id": media_id,
-                                    "link": "<MEDIA_URL>",
-                                    "caption": message or ""
-                                }
-                            }
-                        elif media_type == "video":
-                            payload = {
-                                "messaging_product": "whatsapp",
-                                "recipient_type": "individual",
-                                "to": phone,
-                                "type": "video",
-                                "video": {
-                                    "id": media_id,
-                                    "caption": message or ""
-                                }
-                            }
-                        elif media_type == "audio":
-                            payload = {
-                                "messaging_product": "whatsapp",
-                                "recipient_type": "individual",
-                                "to": phone,
-                                "type": "audio",
-                                "audio": {
-                                    "id": media_id
-                                }
-                            }
-                        else:
-                            payload = {
-                                "messaging_product": "whatsapp",
-                                "recipient_type": "individual",
-                                "to": phone,
-                                "type": "document",
-                                "document": {
-                                    "id": media_id,
-                                    "caption": message or ""
-                                }
-                            }
+                    print('urlllllllllllllllllll')
+                    print("📦 Uploaded media URL:", uploaded_url)
+                    print("📤 Final send URL:", send_url)
 
-                        send_response = requests.post(send_url, headers=send_headers, json=payload)
-                        print("Send Status:", send_response.status_code)
-                        print("Send Response:", send_response.text)
-            finally:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+                    requests.get(send_url, headers=headers)
 
-        elif phone and message:
-            send_url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
-            send_headers = {
-                "Authorization": f"Bearer {ACCESS_TOKEN}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "messaging_product": "whatsapp",
-                "to": phone,
-                "type": "text",
-                "text": {"body": message}
-            }
-
-            send_response = requests.post(send_url, headers=send_headers, json=payload)
-            print("Text Status:", send_response.status_code)
-            print("Text Response:", send_response.text)
+            elif message:   
+                # Send text message only
+                send_url = f"https://dynoble.com/app/API/sendtextmessage.php?userphone={phone}&messages={message}"
+                requests.get(send_url,headers=headers)
 
         return HttpResponseRedirect(f"{request.path}?phone={phone}")
+
+
 
 
 
@@ -213,8 +162,14 @@ class WhatsappContactView(LoginRequiredMixin,View):
             'page_obj':page_obj,
             'starts_with': starts_with,
 
-            })
+        })
     
+
+
+
+
+
+
 class SaveContactView(View):
 
     def __init__(self, **kwargs):
