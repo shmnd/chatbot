@@ -60,6 +60,49 @@
             <span title="Save Contact" class="text-success" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#saveContactModal">➕</span>
             {% endif %}
         </div>
+        <!-- Save Contact Modal -->
+            <div class="modal fade" id="saveContactModal" tabindex="-1" aria-labelledby="saveContactModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'whatsapp:save_contact' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="saveContactModalLabel">Save Contact</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="phone" value="{{ user_phone }}">
+                        <input type="text" name="name" class="form-control" placeholder="Enter name" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Save</button>
+                    </div>
+                    </form>
+                </div>
+                </div>
+            </div>
+            
+            <!-- Edit Contact Modal -->
+            <div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'whatsapp:save_contact' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editContactModalLabel">Edit Contact</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="phone" value="{{ user_phone }}">
+                        <input type="text" name="name" class="form-control" placeholder="Enter new name" value="{{ user_name }}" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                    </form>
+                </div>
+                </div>
+            </div>
     </div>
   
     <div class="text-end">
@@ -74,10 +117,7 @@
     <div class="d-flex flex-grow-1 overflow-hidden">
     <!-- Sidebar -->
         <div class="bg-light p-2" style="width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ddd;">
-        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-            <strong class="ps-2">Chats</strong>
-            <a href="#" class="btn btn-sm btn-warning me-2">New Chat</a>
-        </div>
+       
         <div class="p-3 d-flex">
             <form method="get" class="d-flex w-100">
             <input type="text" name="phone" class="form-control me-2" placeholder="Search...">
