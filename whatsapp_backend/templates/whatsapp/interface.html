@@ -3,6 +3,13 @@
 {% block content %}
 
 <style>
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
   #kt_app_content_container {
     margin-left: 0 !important;
     width: 100% !important;
@@ -11,6 +18,11 @@
   body[data-kt-app-sidebar-minimize="on"] #kt_app_content_container {
     margin-left: 60px;
     width: calc(100% - 80px);
+  }
+
+  .flex-wrap-on-mobile {
+    display: flex;
+    flex-direction: row;
   }
 
   @media (max-width: 768px) {
@@ -44,11 +56,60 @@
     color: gray;
     margin-top: 5px;
   }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 100% !important;
+      border-right: none !important;
+      border-bottom: 1px solid #ccc;
+    }
+  
+    .chat-panel {
+      width: 100%;
+    }
+  
+    .d-flex.flex-grow-1 {
+      flex-direction: column !important;
+    }
+  
+    .msg {
+      max-width: 90%;
+    }
+  }
+  
+  /* Hide sidebar on small screens by default */
+  @media (max-width: 768px) {
+    .sidebar-panel {
+      position: fixed;
+      left: -100%;
+      top: 0;
+      height: 100%;
+      background-color: #fff;
+      z-index: 1050;
+      transition: left 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+  
+    .sidebar-panel.show {
+      left: 0;
+    }
+  
+    #chatBox {
+      height: calc(100vh - 160px);
+      overflow-y: auto;
+    }
+  }
+  
+
 </style>
 
 <div class="d-flex flex-column" style="height: 100vh;">
   <!-- Header -->
   <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+    <!-- Hamburger button -->
+    <button class="btn d-md-none me-2" onclick="toggleSidebar()">
+      <i class="fas fa-bars"></i>
+    </button>
     <div class="d-flex flex-column">
         <div class="d-flex align-items-center" style="margin-left: 300px;">
             <h1 class="mb-0" style="font-size: 1.5rem;">
@@ -114,9 +175,9 @@
   
 
   <!-- Main Body -->
-    <div class="d-flex flex-grow-1 overflow-hidden">
+  <div class="d-flex flex-grow-1 overflow-hidden flex-wrap-on-mobile">
     <!-- Sidebar -->
-        <div class="bg-light p-2" style="width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ddd;">
+      <div id="sidebarPanel" class="bg-light p-2 sidebar-panel" style="min-width: 250px; max-width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ddd;">
        
         <div class="p-3 d-flex">
             <form method="get" class="d-flex w-100">
@@ -134,31 +195,40 @@
     </div>
 
     <!-- Chat Panel -->
-    <div class="flex-grow-1 d-flex flex-column">
+    <div class="flex-grow-1 d-flex flex-column chat-panel">
       <!-- Chat Box -->
       <div id="chatBox" class="flex-grow-1 overflow-auto p-4" style="background-color: #ece5dd;">
         {% if messages %}
           {% for message in messages %}
             <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
               <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
-                {% if message.file_url %}
-                  {% with message.mime_type|default_if_none:'' as mime %}
-                    {% if 'image' in mime %}
-                      <img src="{{ message.file_url }}" class="img-fluid rounded mt-2" style="max-width: 300px;">
-                    {% elif 'video' in mime %}
-                      <video controls class="mt-2" style="max-width: 300px;">
-                        <source src="{{ message.file_url }}" type="{{ mime }}">
-                      </video>
-                    {% elif 'audio' in mime %}
-                      <audio controls class="mt-2">
-                        <source src="{{ message.file_url }}" type="{{ mime }}">
-                      </audio>
-                    {% elif 'application' in mime or 'doc' in mime or 'pdf' in mime %}
-                      <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 Download Document</a>
-                    {% else %}
-                      <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary mt-2">📎 View File</a>
-                    {% endif %}
-                  {% endwith %}
+                {% if message.msg_type in 'image video audio document' %}
+                  {% if message.msg_type == 'image' %}
+                    <img src="{{ message.file_url }}" class="img-fluid rounded mt-2" style="max-width: 300px; cursor:pointer;" 
+                          data-bs-toggle="modal" data-bs-target="#imageModal{{ forloop.counter }}">
+                    
+                    <!-- Modal -->
+                    <div class="modal fade" id="imageModal{{ forloop.counter }}" tabindex="-1" aria-labelledby="imageModalLabel{{ forloop.counter }}" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content">
+                          <div class="modal-body text-center p-0">
+                            <img src="{{ message.file_url }}" class="img-fluid" style="width:100%;">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  {% elif message.msg_type == 'video' %}
+                    <video controls class="mt-2" style="max-width: 300px;">
+                      <source src="{{ message.file_url }}">
+                    </video>
+                  {% elif message.msg_type == 'audio' %}
+                    <audio controls class="mt-2">
+                      <source src="{{ message.file_url }}">
+                    </audio>
+                  {% elif message.msg_type == 'document' %}
+                    <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>
+                  {% endif %}
                 {% else %}
                   {{ message.clean_body|safe }}
                 {% endif %}
@@ -207,6 +277,20 @@
     const form = input.closest("form");
     if (form) form.submit();
   }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById("sidebarPanel");
+    if (sidebar.classList.contains("show")) {
+      sidebar.classList.remove("show");
+    } else {
+      sidebar.classList.add("show");
+    }
+  }
+
+
 </script>
+
+<!-- ✅ Correct Bootstrap Bundle JS with proper closing tag -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 {% endblock %}

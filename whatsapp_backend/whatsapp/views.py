@@ -1,27 +1,105 @@
+# Standard library imports
 import os
+import json
 import mimetypes
 import tempfile
-import requests
-from django.utils.text import slugify
-from django.views import View
-from django.shortcuts import render,redirect
-from django.contrib.auth.mixins import LoginRequiredMixin
-from whatsapp.service.whatsapp_api import fetch_contact
-from django.core.paginator import Paginator
-from django.http import HttpResponseRedirect,HttpResponse
-from bs4 import BeautifulSoup
-from whatsapp.models import whatsappUsers,WhatsAppMessage
-from django.conf import settings
 from datetime import datetime
-from django.urls import reverse
-from urllib.parse import quote
-# Create your views here.
 
+# Third-party imports
+import requests
+from bs4 import BeautifulSoup
+
+# Django imports
+from django.conf import settings
+from django.urls import reverse
+from django.utils.text import slugify
+from django.utils.timezone import now
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+)
+from django.shortcuts import render, redirect
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.utils.decorators import method_decorator
+# Local app imports
+from whatsapp.models import whatsappUsers, WhatsAppMessage
+from whatsapp.service.whatsapp_api import fetch_contact
+from whatsapp.helpers.utils import extract_file_url_from_msg_body
+
+# Create your views here.
+@method_decorator(csrf_exempt, name='dispatch')
+class WhatsAppWebhookView(View):
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            for entry in data.get("entry", []):
+                for change in entry.get("changes", []):
+                    value = change.get("value", {})
+                    messages = value.get("messages", [])
+                    our_number = settings.WHATSAPP_NUMBER
+
+                    for msg in messages:
+                        sender = msg.get("from")
+                        msg_type = msg.get("type")
+
+                        msg_body = ""
+                        file_url = ""
+                        mime_type = ""
+
+                        if msg_type == "text":
+                            msg_body = msg['text']['body']
+
+                        elif msg_type in ["image", "audio", "video", "document"]:
+                            media_id = msg[msg_type]["id"]
+                            media_url = f"https://graph.facebook.com/v18.0/{media_id}"
+                            headers = {"Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"}
+
+                            media_res = requests.get(media_url, headers=headers)
+                            if media_res.status_code == 200:
+                                direct_url = media_res.json().get("url")
+                                media_content = requests.get(direct_url, headers=headers)
+
+                                if media_content.status_code == 200:
+                                    mime_type = media_content.headers.get("Content-Type")
+                                    extension = mimetypes.guess_extension(mime_type)
+                                    filename = f"received_{media_id}{extension}"
+                                    path = os.path.join(tempfile.gettempdir(), filename)
+                                    with open(path, 'wb') as f:
+                                        f.write(media_content.content)
+                                    msg_body = f"<a href='{direct_url}' target='_blank'>View {msg_type}</a>"
+
+                        WhatsAppMessage.objects.create(
+                            usernumber=sender,
+                            id_phone=our_number,
+                            msg_body=msg_body,
+                            msg_status=0,
+                            msg_type=msg_type,
+                            mime_type=mime_type,
+                            status=0,
+                            local_date_time=now().strftime("%d-%m-%Y %H:%M:%S"),
+                            created_date=now(),
+                            modified_date=now(),
+                            msg_sent_by="0"
+                        )
+
+            return JsonResponse({"status": "received"}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({"error": "Invalid method"}, status=405)
+    
 class WhatsappHomePageView(LoginRequiredMixin, View):
     def get(self, request):
         phone = request.GET.get("phone", "").strip()
         messages = []
-
         user_exists = False
         user_name = phone
 
@@ -31,28 +109,31 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 user_exists = True
                 user_name = user_obj.user_name or phone
 
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            }
+            messages_qs = WhatsAppMessage.objects.filter(Q(usernumber=phone) | Q(id_phone=phone)).order_by("msg_id")
+            messages = []
+   
+            for m in messages_qs:
+                soup = BeautifulSoup(m.msg_body or "", "html.parser")
+                clean_body = soup.text.split("Time:")[0].strip()
+                timestamp = ""
+                if "Time:" in soup.text:
+                    try:
+                        timestamp = soup.text.split("Time:")[1].strip()
+                    except:
+                        timestamp = ""
 
-            res = requests.get(
-                f"https://dynoble.com/app/API/fetch_chats.php?user_num={phone}",
-                headers=headers,
-            )
-
-            if res.status_code == 200:
-                messages = res.json()
-
-                for m in messages:
-                    m["msg_status"] = int(m.get("msg_status", 0))
-                    raw = m.get("msg_body", "")
-
-                    soup = BeautifulSoup(raw, "html.parser")
-                    m["clean_body"] = soup.text.split("Time:")[0].strip()
-                    m["timestamp"] = soup.text.split("Time:")[1].strip() if "Time:" in soup.text else ""
-
-                    if m.get("filename"):
-                        m["file_url"] = f"https://dynoble.com/uploads/{m['filename']}"
+                messages.append({
+                "msg_body": m.msg_body,
+                "msg_status": m.msg_status or 0,
+                "msg_type": m.msg_type,
+                "clean_body": clean_body,
+                "timestamp": timestamp,
+                "filename": m.filename,
+                "file_url": extract_file_url_from_msg_body(m.msg_body),
+                "mime_type": m.mime_type or "",
+                "local_date_time": m.local_date_time,
+                "sent_by": m.msg_sent_by,
+            })
 
         return render(request, "whatsapp/interface.html", {
             "messages": messages,
@@ -75,10 +156,11 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
             if attachment:
 
                 file_type,_ = mimetypes.guess_type(attachment.name)
-                file_name = slugify(os.path.splitext(attachment.name)[0]) + os.path.splitext(attachment.name)[1]
 
                 if not file_type:
-                    HttpResponse("Unsupported file type", status=400)
+                    return HttpResponse("Unsupported file type", status=400)
+                
+                file_name = slugify(os.path.splitext(attachment.name)[0]) + os.path.splitext(attachment.name)[1]
 
                 temp_dir = tempfile.gettempdir()
                 file_path = os.path.join(temp_dir,file_name)
@@ -89,14 +171,9 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 # Upload file to dynoble (replace with your real upload endpoint)
                 upload_url = "https://dynoble.com/sales_new/application/views/waba/media_v2.php"
 
-
                 with open(file_path,'rb') as file_data:
                     files = {'file':(file_name,file_data,file_type)}
                     upload_res = requests.post(upload_url, files=files, headers=headers) 
-
-                print('resultttttttttt')
-                print("UPLOAD STATUS:", upload_res.status_code)
-                print("UPLOAD RESPONSE TEXT:", upload_res.text)
 
                 if upload_res.status_code == 200:
                     uploaded_data = upload_res.json()
@@ -136,10 +213,17 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     print("SEND STATUS:", send_res.status_code)
                     print("SEND RESPONSE:", send_res.text)
 
+                    message_id = None
+                    try:
+                        message_id = send_res.json()["messages"][0]["id"]
+                    except:
+                        pass
+
                     # Step 4: Save to DB
                     timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-                    status = "1"
-                    color = "#03ac37" if status == "read" else "blue"
+                    status = 1
+                    color = "#03ac37" if status == 2 else "blue" 
+                    our_number = settings.WHATSAPP_NUMBER
 
                     if msg_type == "image":
                         msg_body = f'<img src="{uploaded_url}" >'
@@ -160,6 +244,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
 
                     WhatsAppMessage.objects.create(
                         msg_body=msg_body,
+                        mime_type = file_type,
                         msg_status=1,
                         msg_type=msg_type,
                         status=status,
@@ -167,34 +252,69 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         usernumber=phone,
                         created_date=datetime.now(),
                         modified_date=datetime.now(),
-                        msg_sent_by="1"
+                        msg_sent_by="1",
+                        send_id=message_id,
+                        id_phone=our_number, 
                     )
 
-
-                    
-                    # Send media using single API
-                    # encoded_url = quote(uploaded_url, safe=':/')
-                    # send_url = f"https://dynoble.com/app/API/sendmedia.php?userphone={phone}&type={media_type}&media_url={uploaded_url}"
-
-                    # if message:
-                    #     send_url += f"&caption={quote(message)}"
-
-                    # print('urlllllllllllllllllll')
-                    # print("📦 Uploaded media URL:", uploaded_url)
-                    # print("📤 Final send URL:", send_url)
-
-                    # requests.get(send_url, headers=headers)
+                    return HttpResponseRedirect(f"{request.path}?phone={phone}")
 
             elif message:   
                 # Send text message only
-                send_url = f"https://dynoble.com/app/API/sendtextmessage.php?userphone={phone}&messages={message}"
-                requests.get(send_url,headers=headers)
+                WA_URL = f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages"
+
+                WA_HEADERS = {
+                    "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                    "Content-Type": "application/json"
+                }
+
+                wa_payload = {
+                    "messaging_product": "whatsapp",
+                    "to": phone,
+                    "type": "text",
+                    "text": {
+                        "body": message
+                    }
+                }
+
+                send_res = requests.post(WA_URL,headers=WA_HEADERS,json=wa_payload)
+                print("TEXT SEND STATUS:", send_res.status_code)
+                print("TEXT SEND RESPONSE:", send_res.text)
+
+                our_number = settings.WHATSAPP_NUMBER
+
+                message_id = None
+                try:
+                    message_id = send_res.json()["messages"][0]["id"]
+                except:
+                    pass
+
+
+                timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                status = 1
+                color = "#03ac37" if status == 2 else "blue" 
+
+                msg_body = (
+                    f'<p>{message}</p>'
+                    f'<p style="color:{color}; text-align:right; font-size:12px; margin-bottom:-5px;">'
+                    f'Time:{timestamp} Message: {status}</p>'
+                )
+
+                WhatsAppMessage.objects.create(
+                    msg_body=msg_body,
+                    msg_status=1,
+                    msg_type="text",
+                    status=status,
+                    local_date_time=timestamp,
+                    usernumber=phone,
+                    created_date=datetime.now(),
+                    modified_date=datetime.now(),
+                    msg_sent_by="1",
+                    send_id=message_id,
+                    id_phone=our_number, 
+                )
 
         return HttpResponseRedirect(f"{request.path}?phone={phone}")
-
-
-
-
 
 class WhatsappContactView(LoginRequiredMixin,View):
 
@@ -243,7 +363,7 @@ class SaveContactView(View):
         try:
             phone = request.POST.get('phone','')
             name = request.POST.get('name','')
-            your_num = settings.WHATSAPP_NUMBER
+            our_num = settings.WHATSAPP_NUMBER
 
             if phone and name :
                 obj,created = whatsappUsers.objects.get_or_create(
@@ -251,7 +371,7 @@ class SaveContactView(View):
                     defaults={
                         "user_name":name,
                         "phoneid":phone,
-                        "our_num":your_num,
+                        "our_num":our_num,
                         "date_time": datetime.now(),
                         "view_order": 0,
                         "agent_id": 0,
