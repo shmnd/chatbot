@@ -38,6 +38,7 @@ class WhatsAppWebhookView(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body.decode('utf-8'))
+            print(data,'datassssssssssssssss')
             for entry in data.get("entry", []):
                 for change in entry.get("changes", []):
                     value = change.get("value", {})
@@ -60,19 +61,32 @@ class WhatsAppWebhookView(View):
                             media_url = f"https://graph.facebook.com/v18.0/{media_id}"
                             headers = {"Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"}
 
+                            print(media_id,media_url,headers,'111111111111111111111')
+
+                            # Step 1: Get the direct download URL
                             media_res = requests.get(media_url, headers=headers)
                             if media_res.status_code == 200:
                                 direct_url = media_res.json().get("url")
+                                print(direct_url,'2222222222222222222222')
                                 media_content = requests.get(direct_url, headers=headers)
-
+                                print(media_content,'333333333333333333333')
                                 if media_content.status_code == 200:
                                     mime_type = media_content.headers.get("Content-Type")
                                     extension = mimetypes.guess_extension(mime_type)
                                     filename = f"received_{media_id}{extension}"
-                                    path = os.path.join(tempfile.gettempdir(), filename)
+
+                                    subfolder = os.path.join(settings.MEDIA_ROOT, "whatsapp_received")
+                                    os.makedirs(subfolder, exist_ok=True)
+                                    path = os.path.join(subfolder, filename)
+
+
+                                    # path = os.path.join(tempfile.gettempdir(), filename)
                                     with open(path, 'wb') as f:
                                         f.write(media_content.content)
-                                    msg_body = f"<a href='{direct_url}' target='_blank'>View {msg_type}</a>"
+
+                                    # Prepare the public link to serve the file
+                                    public_url = f"{settings.MEDIA_URL}whatsapp_received/{filename}"
+                                    msg_body = f"<a href='{public_url}' target='_blank'>View {msg_type}</a>"
 
                         WhatsAppMessage.objects.create(
                             usernumber=sender,
