@@ -287,6 +287,77 @@
     }
   }
 
+  let lastMessageCount = 0;
+
+  const userPhone = "{{ user_phone }}";
+
+  function refreshMessages() {
+    fetch("{% url 'whatsapp:fetch_messages' %}?phone={{ user_phone }}")
+      .then(res => res.json())
+      .then(data => {
+        const chatBox = document.getElementById("chatBox");
+
+        // Only update if message count has changed
+        if (data.messages.length !== lastMessageCount) {
+          lastMessageCount = data.messages.length;
+
+          const scrollPosition = chatBox.scrollTop;
+          const scrollHeight = chatBox.scrollHeight;
+
+          chatBox.innerHTML = "";
+
+          data.messages.forEach(m => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "d-flex " + (m.msg_status === 1 ? "justify-content-end" : "justify-content-start");
+
+            const bubble = document.createElement("div");
+            bubble.className = "msg " + (m.msg_status === 1 ? "sent" : "received");
+            bubble.innerHTML = formatMessageHTML(m);
+
+            wrapper.appendChild(bubble);
+            chatBox.appendChild(wrapper);
+          });
+
+          // Restore exact previous scroll without shifting
+          chatBox.scrollTop = scrollPosition;
+        }
+      });
+  }
+
+  function formatMessageHTML(message) {
+    let html = "";
+    const fileUrl = message.file_url || "";
+    const timestamp = message.timestamp || "";
+
+    if (["image", "video", "audio", "document"].includes(message.msg_type)) {
+      if (message.msg_type === "image") {
+        html += `<img src="${fileUrl}" class="img-fluid rounded mt-2" style="max-width: 300px;">`;
+      } else if (message.msg_type === "video") {
+        html += `<video controls class="mt-2" style="max-width: 300px;"><source src="${fileUrl}"></video>`;
+      } else if (message.msg_type === "audio") {
+        html += `<audio controls class="mt-2"><source src="${fileUrl}"></audio>`;
+      } else if (message.msg_type === "document") {
+        html += `<a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>`;
+      }
+    } else {
+      html += message.clean_body || "";
+    }
+
+    html += `<div class="timestamp">Time: ${timestamp || "--"} — ${getStatusLabel(message.msg_status)}</div>`;
+    return html;
+  }
+
+  function getStatusLabel(status) {
+    if (status === 1) return "sent";
+    if (status === 2) return "delivered";
+    if (status === 3) return "read";
+    return "received";
+  }
+
+  // ⏱️ Auto-refresh every 5 seconds
+  setInterval(refreshMessages, 5000);
+
+  
 
 </script>
 

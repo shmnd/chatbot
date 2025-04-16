@@ -61,15 +61,11 @@ class WhatsAppWebhookView(View):
                             media_url = f"https://graph.facebook.com/v18.0/{media_id}"
                             headers = {"Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"}
 
-                            print(media_id,media_url,headers,'111111111111111111111')
-
                             # Step 1: Get the direct download URL
                             media_res = requests.get(media_url, headers=headers)
                             if media_res.status_code == 200:
                                 direct_url = media_res.json().get("url")
-                                print(direct_url,'2222222222222222222222')
                                 media_content = requests.get(direct_url, headers=headers)
-                                print(media_content,'333333333333333333333')
                                 if media_content.status_code == 200:
                                     mime_type = media_content.headers.get("Content-Type")
                                     extension = mimetypes.guess_extension(mime_type)
@@ -78,7 +74,6 @@ class WhatsAppWebhookView(View):
                                     subfolder = os.path.join(settings.MEDIA_ROOT, "whatsapp_received")
                                     os.makedirs(subfolder, exist_ok=True)
                                     path = os.path.join(subfolder, filename)
-
 
                                     # path = os.path.join(tempfile.gettempdir(), filename)
                                     with open(path, 'wb') as f:
@@ -363,11 +358,6 @@ class WhatsappContactView(LoginRequiredMixin,View):
         })
     
 
-
-
-
-
-
 class SaveContactView(View):
 
     def __init__(self, **kwargs):
@@ -405,3 +395,45 @@ class SaveContactView(View):
             self.response_format['error'] = str(e)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class FetchMessagesAPI(View):
+    def get(self, request):
+        phone = request.GET.get("phone", "").strip()
+        messages = []
+        user_exists = False
+        user_name = phone
+
+        if phone:
+            user_obj = whatsappUsers.objects.filter(user_num=phone).first()
+            if user_obj:
+                user_exists = True
+                user_name = user_obj.user_name or phone
+
+            messages_qs = WhatsAppMessage.objects.filter(Q(usernumber=phone) | Q(id_phone=phone)).order_by("msg_id")
+            messages = []
+   
+            for m in messages_qs:
+                soup = BeautifulSoup(m.msg_body or "", "html.parser")
+                clean_body = soup.text.split("Time:")[0].strip()
+                timestamp = ""
+                if "Time:" in soup.text:
+                    try:
+                        timestamp = soup.text.split("Time:")[1].strip()
+                    except:
+                        timestamp = ""
+
+                messages.append({
+                "msg_body": m.msg_body,
+                "msg_status": m.msg_status or 0,
+                "msg_type": m.msg_type,
+                "clean_body": clean_body,
+                "timestamp": timestamp,
+                "filename": m.filename,
+                "file_url": extract_file_url_from_msg_body(m.msg_body),
+                "mime_type": m.mime_type or "",
+                "local_date_time": m.local_date_time,
+                "sent_by": m.msg_sent_by,
+            })
+
+
+        return JsonResponse({"messages": messages}, status=200)
