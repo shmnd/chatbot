@@ -100,6 +100,18 @@
     }
   }
 
+  .chat-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 115px); 
+  }
+  
+  #chatBox {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  
+
   /* Ensure entire content respects Metronic sidebar */
 #kt_app_content_container {
   padding-left: 0 !important;
@@ -236,73 +248,75 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     <!-- Chat Panel -->
     <div class="flex-grow-1 d-flex flex-column chat-panel">
       <!-- Chat Box -->
-      <div id="chatBox" class="flex-grow-1 overflow-auto p-4" style="background-color: #ece5dd;">
-        {% if messages %}
-          {% for message in messages %}
-            <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
-              <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
-                {% if message.msg_type in 'image video audio document' %}
-                  {% if message.msg_type == 'image' %}
-                    <img src="{{ message.file_url }}" class="img-fluid rounded mt-2" style="max-width: 300px; cursor:pointer;" 
-                          data-bs-toggle="modal" data-bs-target="#imageModal{{ forloop.counter }}">
-                    
-                    <!-- Modal -->
-                    <div class="modal fade" id="imageModal{{ forloop.counter }}" tabindex="-1" aria-labelledby="imageModalLabel{{ forloop.counter }}" aria-hidden="true">
-                      <div class="modal-dialog modal-dialog-centered modal-lg">
-                        <div class="modal-content">
-                          <div class="modal-body text-center p-0">
-                            <img src="{{ message.file_url }}" class="img-fluid" style="width:100%;">
+      <div class="chat-wrapper">
+        <div id="chatBox" class="overflow-auto p-4" style="background-color: #ece5dd;">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="d-flex {% if message.msg_status == 1 %}justify-content-end{% else %}justify-content-start{% endif %}">
+                <div class="msg {% if message.msg_status == 1 %}sent{% else %}received{% endif %}">
+                  {% if message.msg_type in 'image video audio document' %}
+                    {% if message.msg_type == 'image' %}
+                      <img src="{{ message.file_url }}" class="img-fluid rounded mt-2" style="max-width: 300px; cursor:pointer;" 
+                            data-bs-toggle="modal" data-bs-target="#imageModal{{ forloop.counter }}">
+                      
+                      <!-- Modal -->
+                      <div class="modal fade" id="imageModal{{ forloop.counter }}" tabindex="-1" aria-labelledby="imageModalLabel{{ forloop.counter }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                          <div class="modal-content">
+                            <div class="modal-body text-center p-0">
+                              <img src="{{ message.file_url }}" class="img-fluid" style="width:100%;">
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                  {% elif message.msg_type == 'video' %}
-                    <video controls class="mt-2" style="max-width: 300px;">
-                      <source src="{{ message.file_url }}">
-                    </video>
-                  {% elif message.msg_type == 'audio' %}
-                    <audio controls class="mt-2">
-                      <source src="{{ message.file_url }}">
-                    </audio>
-                  {% elif message.msg_type == 'document' %}
-                    <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>
+                    {% elif message.msg_type == 'video' %}
+                      <video controls class="mt-2" style="max-width: 300px;">
+                        <source src="{{ message.file_url }}">
+                      </video>
+                    {% elif message.msg_type == 'audio' %}
+                      <audio controls class="mt-2">
+                        <source src="{{ message.file_url }}">
+                      </audio>
+                    {% elif message.msg_type == 'document' %}
+                      <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>
+                    {% endif %}
+                  {% else %}
+                    {{ message.clean_body|safe }}
                   {% endif %}
-                {% else %}
-                  {{ message.clean_body|safe }}
-                {% endif %}
-                <div class="timestamp">Time: {{ message.timestamp }} — 
-                  {% if message.msg_status == 1 %}sent{% elif message.msg_status == 2 %}delivered{% elif message.msg_status == 3 %}read{% else %}received{% endif %}
+                  <div class="timestamp">Time: {{ message.timestamp }} — 
+                    {% if message.msg_status == 1 %}sent{% elif message.msg_status == 2 %}delivered{% elif message.msg_status == 3 %}read{% else %}received{% endif %}
+                  </div>
                 </div>
               </div>
-            </div>
-          {% endfor %}
-        {% else %}
-          <div class="text-center text-muted py-5">No messages yet. Start the conversation below 👇</div>
-        {% endif %}
-      </div>
-
-      <!-- Message Input -->
-      <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
-        {% csrf_token %}
-        <div class="dropdown me-2">
-          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="mediaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-paperclip fa-lg"></i>
-          </button>
-          <ul class="dropdown-menu" aria-labelledby="mediaDropdown">
-            <li><label class="dropdown-item" for="uploadImage"><i class="fas fa-image me-2"></i>Image</label></li>
-            <li><label class="dropdown-item" for="uploadVideo"><i class="fas fa-video me-2"></i>Video</label></li>
-            <li><label class="dropdown-item" for="uploadAudio"><i class="fas fa-microphone me-2"></i>Audio</label></li>
-            <li><label class="dropdown-item" for="uploadDoc"><i class="fas fa-file-alt me-2"></i>Document</label></li>
-          </ul>
-          <input type="file" name="attachment" id="uploadImage" accept="image/*" hidden onchange="submitOnSelect(this)">
-          <input type="file" name="attachment" id="uploadVideo" accept="video/*" hidden onchange="submitOnSelect(this)">
-          <input type="file" name="attachment" id="uploadAudio" accept="audio/*" hidden onchange="submitOnSelect(this)">
-          <input type="file" name="attachment" id="uploadDoc" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden onchange="submitOnSelect(this)">
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-muted py-5">No messages yet. Start the conversation below 👇</div>
+          {% endif %}
         </div>
-        <input type="text" name="message" class="form-control mx-2" placeholder="Type a message...">
-        <button class="btn btn-success" type="submit">Send</button>
-      </form>
+
+        <!-- Message Input -->
+        <form method="post" enctype="multipart/form-data" class="d-flex align-items-center p-3 border-top bg-white">
+          {% csrf_token %}
+          <div class="dropdown me-2">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="mediaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-paperclip fa-lg"></i>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="mediaDropdown">
+              <li><label class="dropdown-item" for="uploadImage"><i class="fas fa-image me-2"></i>Image</label></li>
+              <li><label class="dropdown-item" for="uploadVideo"><i class="fas fa-video me-2"></i>Video</label></li>
+              <li><label class="dropdown-item" for="uploadAudio"><i class="fas fa-microphone me-2"></i>Audio</label></li>
+              <li><label class="dropdown-item" for="uploadDoc"><i class="fas fa-file-alt me-2"></i>Document</label></li>
+            </ul>
+            <input type="file" name="attachment" id="uploadImage" accept="image/*" hidden onchange="submitOnSelect(this)">
+            <input type="file" name="attachment" id="uploadVideo" accept="video/*" hidden onchange="submitOnSelect(this)">
+            <input type="file" name="attachment" id="uploadAudio" accept="audio/*" hidden onchange="submitOnSelect(this)">
+            <input type="file" name="attachment" id="uploadDoc" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden onchange="submitOnSelect(this)">
+          </div>
+          <input type="text" name="message" class="form-control mx-2" placeholder="Type a message...">
+          <button class="btn btn-success" type="submit">Send</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
