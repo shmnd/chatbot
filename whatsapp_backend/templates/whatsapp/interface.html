@@ -424,17 +424,23 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     fetch("{% url 'whatsapp:fetch_users' %}")
       .then(res => res.json())
       .then(data => {
-        const contactList = document.querySelector('#contactList');
-        contactList.innerHTML = '';  // Clear old list
+        const contactList = document.querySelector('#sidebarPanel div[style*="padding-left"]');
+        contactList.innerHTML = '';
   
         data.users.forEach(user => {
           const a = document.createElement('a');
           a.href = `?phone=${user.user_num}`;
-          a.className = 'px-3 py-2 d-block chat-item border-bottom';
+          a.className = 'px-3 py-2 d-block chat-item border-bottom d-flex justify-content-between align-items-center';
   
           const name = user.user_name || user.user_num;
-          const badge = user.msgstatus === 1 ? ' <span class="badge bg-danger">New</span>' : '';
-          a.innerHTML = `${name}<br><small>${user.user_num}</small>${badge}`;
+          const badge = user.msgstatus === 1 ? '<span class="badge bg-primary">New</span>' : '';
+          a.innerHTML = `
+            <div>
+              <strong>${name}</strong><br>
+              <small>${user.user_num || ''}</small>
+            </div>
+            ${badge}
+          `;
   
           contactList.appendChild(a);
         });

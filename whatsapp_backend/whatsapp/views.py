@@ -449,6 +449,24 @@ class FetchChatUsersView(View):
     def get(self, request):
         users = sorted(
             whatsappUsers.objects.all(),
-            key=lambda user:WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
-            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,reverse=True)
-        return JsonResponse({"users": list(users)})
+            key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
+            reverse=True
+        )
+
+        user_data = []
+        for user in users:
+            last_msg = WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first()
+            last_message = ""
+            if last_msg:
+                soup = BeautifulSoup(last_msg.msg_body or "", "html.parser")
+                last_message = soup.text.strip()
+
+            user_data.append({
+                "user_num": user.user_num,
+                "user_name": user.user_name or "Unnamed User",
+                "msgstatus": user.msgstatus,
+                "last_message": last_message,
+            })
+
+        return JsonResponse({"users": user_data})
