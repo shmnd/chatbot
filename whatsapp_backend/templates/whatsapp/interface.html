@@ -232,8 +232,8 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       <div id="sidebarPanel" class="bg-light p-2 sidebar-panel" style="min-width: 250px; max-width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ddd;">
        
         <div class="p-3 d-flex">
-            <form method="get" class="d-flex w-100">
-            <input type="text" name="phone" class="form-control me-2" placeholder="Search...">
+            <form method="get" action="{% url 'whatsapp:interface' %}" class="d-flex w-100">
+            <input type="text" name="phone" class="form-control me-2" placeholder="Search phone number">
             <button class="btn btn-warning">Go</button>
             </form>
         </div>

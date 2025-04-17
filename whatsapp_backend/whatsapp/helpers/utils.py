@@ -1,5 +1,8 @@
+import json
 from bs4 import BeautifulSoup
 from whatsapp.models import whatsappUsers, WhatsAppMessage
+from django.views import View
+from django.http import JsonResponse
 
 '''for extract file url from message body'''
 def extract_file_url_from_msg_body(msg_body):
@@ -37,3 +40,33 @@ def handle_new_message(message, contact_name=None,current_open_number=None):
                 user.user_name = contact_name
             user.save()
 
+'''Send my database data to php with his api '''
+class SendMessageWebhookView(View):
+    def post(self, request):
+        from django.views.decorators.csrf import csrf_exempt
+        from django.utils.decorators import method_decorator
+        import requests
+
+        try:
+            data = json.loads(request.body)
+            payload = {
+                "usernumber": data.get("usernumber"),
+                "msg_body": data.get("msg_body"),
+                "msg_type": data.get("msg_type"),
+                "msg_status": data.get("msg_status"),
+                "timestamp": data.get("timestamp"),
+                "filename": data.get("filename"),
+                "mime_type": data.get("mime_type"),
+                "file_url": data.get("file_url"),
+                "sent_by": data.get("sent_by"),
+            }
+
+            res = requests.post("https://example.com/api/save_message.php", json=payload)
+
+            if res.status_code == 200:
+                return JsonResponse({"status": "success", "php_response": res.text})
+            else:
+                return JsonResponse({"status": "error", "message": res.text}, status=res.status_code)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)

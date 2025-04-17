@@ -29,7 +29,7 @@ from django.utils.decorators import method_decorator
 # Local app imports
 from whatsapp.models import whatsappUsers, WhatsAppMessage
 from whatsapp.service.whatsapp_api import fetch_contact
-from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message
+from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView
 
 # Create your views here.
 @method_decorator(csrf_exempt, name='dispatch')
@@ -114,46 +114,59 @@ class WhatsAppWebhookView(View):
     
 class WhatsappHomePageView(LoginRequiredMixin, View):
     def get(self, request):
-        phone = request.GET.get("phone", "").strip()
+        search = request.GET.get("phone", "").strip()
         messages = []
         user_exists = False
-        user_name = phone
+        user_name = search
+        phone = ""  # Will be set only if there's an exact number match
 
-        if phone:
-            user_obj = whatsappUsers.objects.filter(user_num=phone).first()
-            if user_obj:
+        # Fetch filtered chat users based on name or number
+        if search:
+            chat_users = whatsappUsers.objects.filter(
+                Q(user_num__icontains=search) | Q(user_name__icontains=search)
+            )
+
+            # If the search string exactly matches a number, treat it as a chat open request
+            exact_match_user = whatsappUsers.objects.filter(user_num=search).first()
+            if exact_match_user:
+                phone = search
                 user_exists = True
-                user_name = user_obj.user_name or phone
+                user_name = exact_match_user.user_name or phone
 
-                # ✅ Reset msgstatus to 0 since we're opening this chat
-                user_obj.msgstatus = 0
-                user_obj.save()
+                # Reset unread message indicator
+                exact_match_user.msgstatus = 0
+                exact_match_user.save()
 
+        else:
+            chat_users = whatsappUsers.objects.all()
+
+        # Get messages if phone is identified
+        if phone:
             messages_qs = WhatsAppMessage.objects.filter(Q(usernumber=phone) | Q(id_phone=phone)).order_by("msg_id")
-            messages = []
-   
             for m in messages_qs:
                 soup = BeautifulSoup(m.msg_body or "", "html.parser")
                 clean_body = soup.text.split("Time:")[0].strip()
                 timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
                 messages.append({
-                "msg_body": m.msg_body,
-                "msg_status": m.msg_status or 0,
-                "msg_type": m.msg_type,
-                "clean_body": clean_body,
-                "timestamp": timestamp,
-                "filename": m.filename,
-                "file_url": extract_file_url_from_msg_body(m.msg_body),
-                "mime_type": m.mime_type or "",
-                "local_date_time": m.local_date_time,
-                "sent_by": m.msg_sent_by,
-            })
-                
+                    "msg_body": m.msg_body,
+                    "msg_status": m.msg_status or 0,
+                    "msg_type": m.msg_type,
+                    "clean_body": clean_body,
+                    "timestamp": timestamp,
+                    "filename": m.filename,
+                    "file_url": extract_file_url_from_msg_body(m.msg_body),
+                    "mime_type": m.mime_type or "",
+                    "local_date_time": m.local_date_time,
+                    "sent_by": m.msg_sent_by,
+                })
+
         chat_users = sorted(
-            whatsappUsers.objects.all(),
-            key=lambda user:WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
-            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,reverse=True)
+            chat_users,
+            key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
+            reverse=True
+        )
 
         return render(request, "whatsapp/interface.html", {
             "messages": messages,
@@ -162,6 +175,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
             "user_exists": user_exists,
             "chat_users": chat_users,
         })
+
 
     def post(self, request):
         phone = request.GET.get("phone")
@@ -262,7 +276,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         f'Time:{timestamp} Message: {status}</p>'
                     )
 
-                    WhatsAppMessage.objects.create(
+                    msg =WhatsAppMessage.objects.create(
                         msg_body=msg_body,
                         mime_type = file_type,
                         msg_status=1,
@@ -276,6 +290,25 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         send_id=message_id,
                         id_phone=our_number, 
                     )
+
+                    # Forward to PHP API
+                    payload = {
+                        "usernumber": msg.usernumber,
+                        "msg_body": msg.msg_body,
+                        "msg_type": msg.msg_type,
+                        "msg_status": msg.msg_status,
+                        "timestamp": msg.created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                        "filename": msg.filename,
+                        "mime_type": msg.mime_type,
+                        "file_url": extract_file_url_from_msg_body(msg.msg_body),
+                        "sent_by": msg.msg_sent_by,
+                    }
+
+                    try:
+                        import requests
+                        requests.post("https://example.com/api/save_message.php", json=payload)
+                    except:
+                        pass
 
                     return HttpResponseRedirect(f"{request.path}?phone={phone}")
 
