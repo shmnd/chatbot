@@ -151,7 +151,10 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 "sent_by": m.msg_sent_by,
             })
                 
-            chat_users = whatsappUsers.objects.all().order_by("-timestamps")
+            chat_users = sorted(
+                whatsappUsers.objects.all(),
+                key=lambda user:WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+                if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,reverse=True)
 
         return render(request, "whatsapp/interface.html", {
             "messages": messages,
