@@ -124,12 +124,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
             for m in messages_qs:
                 soup = BeautifulSoup(m.msg_body or "", "html.parser")
                 clean_body = soup.text.split("Time:")[0].strip()
-                timestamp = ""
-                if "Time:" in soup.text:
-                    try:
-                        timestamp = soup.text.split("Time:")[1].strip()
-                    except:
-                        timestamp = ""
+                timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
                 messages.append({
                 "msg_body": m.msg_body,
@@ -415,12 +410,7 @@ class FetchMessagesAPI(View):
             for m in messages_qs:
                 soup = BeautifulSoup(m.msg_body or "", "html.parser")
                 clean_body = soup.text.split("Time:")[0].strip()
-                timestamp = ""
-                if "Time:" in soup.text:
-                    try:
-                        timestamp = soup.text.split("Time:")[1].strip()
-                    except:
-                        timestamp = ""
+                timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
                 messages.append({
                 "msg_body": m.msg_body,
