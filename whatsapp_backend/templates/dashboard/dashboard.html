@@ -85,25 +85,28 @@
               class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'home:our.services-view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span> 
           </div>
         </div> {% endcomment %}
+        
         <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
             <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">All contacts<svg
                 class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
                 <path fill="none" d="M0 0h24v24H0z"></path>
-              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_jobs}}</span><span
+              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_contact}}</span><span
               class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'whatsapp:contacts' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
           </div>
         </div> 
-        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
+
+        <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
             <!-- <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Clients<svg -->
-              <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Job Application<svg
+              <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Today WhatsApp<svg
                 class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
                 <path fill="none" d="M0 0h24v24H0z"></path>
-              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_job_application}}</span><span
-              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'career:job-application.view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
+              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{today_whatsapp_users}}</span><span
+              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'whatsapp:interface' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
           </div>
-        </div> {% endcomment %}
+        </div> 
+
         {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
             <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Blogs<svg
