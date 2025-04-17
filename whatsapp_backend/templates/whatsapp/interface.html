@@ -238,12 +238,19 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
             </form>
         </div>
         <div style="padding-left:10px;">
-            {% for chat in chat_users %}
-            <a href="?phone={{ chat.user_num }}" class="px-3 py-2 d-block chat-item border-bottom">
-                {{ chat.user_name|default:chat.user_num }}<br><small>{{ chat.user_num }}</small>
+          {% for chat in chat_users %}
+            <a href="?phone={{ chat.user_num }}" class="px-3 py-2 d-block chat-item border-bottom d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ chat.user_name|default:"Unnamed User" }}</strong><br>
+                <small>{{ chat.user_num }}</small>
+              </div>
+              {% if chat.msgstatus == 1 %}
+                <span class="badge bg-primary">New</span>
+              {% endif %}
             </a>
-            {% endfor %}
+          {% endfor %}
         </div>
+        
     </div>
 
     <!-- Chat Panel -->
@@ -341,6 +348,8 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     }
   }
 
+
+  // Fetchning new messages in every 5 secs from a specific user 
   let lastMessageCount = 0;
 
   const userPhone = "{{ user_phone }}";
@@ -408,10 +417,31 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     return "received";
   }
 
-  // ⏱️ Auto-refresh every 5 seconds
+  // ⏱️ Auto-refresh every 5 seconds tp fetch new users
   setInterval(refreshMessages, 5000);
 
+  function refreshChatUsers() {
+    fetch("{% url 'whatsapp:fetch_users' %})
+      .then(res => res.json())
+      .then(data => {
+        const contactList = document.querySelector('#contactList');
+        contactList.innerHTML = '';  // Clear old list
   
+        data.users.forEach(user => {
+          const a = document.createElement('a');
+          a.href = `?phone=${user.user_num}`;
+          a.className = 'px-3 py-2 d-block chat-item border-bottom';
+  
+          const name = user.user_name || user.user_num;
+          const badge = user.msgstatus === 1 ? ' <span class="badge bg-danger">New</span>' : '';
+          a.innerHTML = `${name}<br><small>${user.user_num}</small>${badge}`;
+  
+          contactList.appendChild(a);
+        });
+      });
+  }
+  
+  setInterval(refreshChatUsers, 5000);
 
 </script>
 

@@ -29,7 +29,7 @@ from django.utils.decorators import method_decorator
 # Local app imports
 from whatsapp.models import whatsappUsers, WhatsAppMessage
 from whatsapp.service.whatsapp_api import fetch_contact
-from whatsapp.helpers.utils import extract_file_url_from_msg_body
+from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message
 
 # Create your views here.
 @method_decorator(csrf_exempt, name='dispatch')
@@ -43,7 +43,13 @@ class WhatsAppWebhookView(View):
                 for change in entry.get("changes", []):
                     value = change.get("value", {})
                     messages = value.get("messages", [])
+                    contacts = value.get("contacts")
                     our_number = settings.WHATSAPP_NUMBER
+
+                    contact_name = None
+                    if contacts:
+                        contact_name = contacts[0].get("profile", {}).get("name")
+                        print(contact_name,'contact nameeeeeeeeeeeeeeeee')
 
                     for msg in messages:
                         sender = msg.get("from")
@@ -75,7 +81,6 @@ class WhatsAppWebhookView(View):
                                     os.makedirs(subfolder, exist_ok=True)
                                     path = os.path.join(subfolder, filename)
 
-                                    # path = os.path.join(tempfile.gettempdir(), filename)
                                     with open(path, 'wb') as f:
                                         f.write(media_content.content)
 
@@ -83,7 +88,7 @@ class WhatsAppWebhookView(View):
                                     public_url = f"{settings.MEDIA_URL}whatsapp_received/{filename}"
                                     msg_body = f"<a href='{public_url}' target='_blank'>View {msg_type}</a>"
 
-                        WhatsAppMessage.objects.create(
+                        message_obj = WhatsAppMessage.objects.create(
                             usernumber=sender,
                             id_phone=our_number,
                             msg_body=msg_body,
@@ -94,8 +99,11 @@ class WhatsAppWebhookView(View):
                             local_date_time=now().strftime("%d-%m-%Y %H:%M:%S"),
                             created_date=now(),
                             modified_date=now(),
-                            msg_sent_by="0"
+                            msg_sent_by="0",
+                            temp_name = contact_name or ""
                         )
+
+                        handle_new_message(message_obj,contact_name )
 
             return JsonResponse({"status": "received"}, status=200)
 
@@ -118,6 +126,10 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 user_exists = True
                 user_name = user_obj.user_name or phone
 
+                # ✅ Reset msgstatus to 0 since we're opening this chat
+                user_obj.msgstatus = 0
+                user_obj.save()
+
             messages_qs = WhatsAppMessage.objects.filter(Q(usernumber=phone) | Q(id_phone=phone)).order_by("msg_id")
             messages = []
    
@@ -138,13 +150,15 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 "local_date_time": m.local_date_time,
                 "sent_by": m.msg_sent_by,
             })
+                
+            chat_users = whatsappUsers.objects.all().order_by("-timestamps")
 
         return render(request, "whatsapp/interface.html", {
             "messages": messages,
             "user_phone": phone,
             "user_name": user_name,
             "user_exists": user_exists,
-            "chat_users": whatsappUsers.objects.all().order_by("-timestamps")
+            "chat_users": chat_users,
         })
 
     def post(self, request):
@@ -427,3 +441,8 @@ class FetchMessagesAPI(View):
 
 
         return JsonResponse({"messages": messages}, status=200)
+
+class FetchChatUsersView(View):
+    def get(self, request):
+        users = whatsappUsers.objects.order_by('-timestamps').values('user_num', 'user_name', 'msgstatus')
+        return JsonResponse({"users": list(users)})

@@ -1,6 +1,7 @@
-import re
 from bs4 import BeautifulSoup
+from whatsapp.models import whatsappUsers, WhatsAppMessage
 
+'''for extract file url from message body'''
 def extract_file_url_from_msg_body(msg_body):
     if not msg_body:
         return ""
@@ -11,3 +12,25 @@ def extract_file_url_from_msg_body(msg_body):
     if tag and tag.get("href"):
         return tag["href"]
     return ""
+
+
+'''if user recieve new message it show in contact list'''
+def handle_new_message(message, contact_name=None):
+    user_number = message.usernumber
+    if user_number:
+        user, created = whatsappUsers.objects.get_or_create(
+            user_num=user_number,
+            defaults={
+                "phoneid": message.id_phone,
+                "our_num": message.ournum,
+                "user_name": contact_name,
+                "timestamps": message.timestamp,
+                "msgstatus": 1
+            }
+        )
+        if not created:
+            user.timestamps = message.timestamp
+            user.msgstatus = 1
+            if contact_name and not user.user_name:
+                user.user_name = contact_name
+            user.save()
