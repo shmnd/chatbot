@@ -237,7 +237,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
             <button class="btn btn-warning">Go</button>
             </form>
         </div>
-        <div style="padding-left:10px;">
+        <div id="contactList" style="padding-left:10px;">
           {% for chat in chat_users %}
             <a href="?phone={{ chat.user_num }}" class="px-3 py-2 d-block chat-item border-bottom d-flex justify-content-between align-items-center">
               <div>
@@ -421,7 +421,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
   setInterval(refreshMessages, 5000);
 
   function refreshChatUsers() {
-    fetch("{% url 'whatsapp:fetch_users' %})
+    fetch("{% url 'whatsapp:fetch_users' %}")
       .then(res => res.json())
       .then(data => {
         const contactList = document.querySelector('#contactList');

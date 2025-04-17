@@ -151,10 +151,10 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 "sent_by": m.msg_sent_by,
             })
                 
-            chat_users = sorted(
-                whatsappUsers.objects.all(),
-                key=lambda user:WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
-                if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,reverse=True)
+        chat_users = sorted(
+            whatsappUsers.objects.all(),
+            key=lambda user:WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,reverse=True)
 
         return render(request, "whatsapp/interface.html", {
             "messages": messages,
@@ -447,5 +447,8 @@ class FetchMessagesAPI(View):
 
 class FetchChatUsersView(View):
     def get(self, request):
-        users = whatsappUsers.objects.order_by('-timestamps').values('user_num', 'user_name', 'msgstatus')
+        users = sorted(
+            whatsappUsers.objects.all(),
+            key=lambda user:WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,reverse=True)
         return JsonResponse({"users": list(users)})

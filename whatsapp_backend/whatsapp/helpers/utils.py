@@ -15,7 +15,7 @@ def extract_file_url_from_msg_body(msg_body):
 
 
 '''if user recieve new message it show in contact list'''
-def handle_new_message(message, contact_name=None):
+def handle_new_message(message, contact_name=None,current_open_number=None):
     user_number = message.usernumber
     if user_number:
         user, created = whatsappUsers.objects.get_or_create(
@@ -30,7 +30,10 @@ def handle_new_message(message, contact_name=None):
         )
         if not created:
             user.timestamps = message.timestamp
-            user.msgstatus = 1
+            # ✅ Only set msgstatus = 1 if it's not currently open in the browser
+            if current_open_number is None or user_number != current_open_number:
+                user.msgstatus = 1
             if contact_name and not user.user_name:
                 user.user_name = contact_name
             user.save()
+
