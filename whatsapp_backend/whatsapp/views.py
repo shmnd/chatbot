@@ -49,7 +49,6 @@ class WhatsAppWebhookView(View):
                     contact_name = None
                     if contacts:
                         contact_name = contacts[0].get("profile", {}).get("name")
-                        print(contact_name,'contact nameeeeeeeeeeeeeeeee')
 
                     for msg in messages:
                         sender = msg.get("from")
@@ -231,8 +230,8 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         wa_payload[msg_type]["caption"] = message
 
                     send_res = requests.post(WA_URL, json=wa_payload, headers=WA_HEADERS)
-                    print("SEND STATUS:", send_res.status_code)
-                    print("SEND RESPONSE:", send_res.text)
+                    # print("SEND STATUS:", send_res.status_code)
+                    # print("SEND RESPONSE:", send_res.text)
 
                     message_id = None
                     try:
@@ -299,8 +298,8 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 }
 
                 send_res = requests.post(WA_URL,headers=WA_HEADERS,json=wa_payload)
-                print("TEXT SEND STATUS:", send_res.status_code)
-                print("TEXT SEND RESPONSE:", send_res.text)
+                # print("TEXT SEND STATUS:", send_res.status_code)
+                # print("TEXT SEND RESPONSE:", send_res.text)
 
                 our_number = settings.WHATSAPP_NUMBER
 
