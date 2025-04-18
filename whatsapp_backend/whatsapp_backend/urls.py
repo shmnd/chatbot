@@ -23,7 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('dashboard.urls')),
     path('auth/',include('authentication.urls')),
-    path('whatsapp/', include('whatsapp.urls')),
+    path('whatsapp/',include('whatsapp.urls')),
+    path('filter/',include('filter.urls'))
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 

@@ -52,6 +52,7 @@ LOCAL_APPS = [
     'authentication',
     'dashboard',
     'whatsapp',
+    'filter'
 
 ]
 

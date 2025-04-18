@@ -1,0 +1,50 @@
+{% extends 'layouts/apps.html' %}
+{% load static %}
+
+
+{% block content %}
+
+<h2>Filters</h2>
+<table>
+  {% for f in filters %}
+  <tr>
+    <td>{{ f.filter_name }}</td>
+    <td>
+      <button onclick="editFilter({{ f.id }})">Edit</button>
+      <button onclick="deleteFilter({{ f.id }})">Delete</button>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+<!-- Add Filter Button -->
+<button data-bs-toggle="modal" data-bs-target="#addModal">Add Filter</button>
+
+<!-- Modal for Add/Edit -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{% url 'filter_module' %}">
+      {% csrf_token %}
+      <input type="text" name="filter_name" id="filterInput" placeholder="Filter Name" required>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function deleteFilter(id) {
+  fetch(`/filters/delete/${id}/`).then(() => location.reload());
+}
+
+function editFilter(id) {
+  fetch(`/filters/update/${id}/`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("filterInput").value = data.filter_name;
+      document.querySelector("form").action = `/filters/update/${id}/`;
+      new bootstrap.Modal(document.getElementById('addModal')).show();
+    });
+}
+</script>
+
+{% endblock content %}
