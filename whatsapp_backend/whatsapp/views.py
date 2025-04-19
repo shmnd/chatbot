@@ -1,4 +1,6 @@
 # Standard library imports
+import requests
+
 import os
 import json
 import mimetypes
@@ -6,7 +8,6 @@ import tempfile
 from datetime import datetime
 
 # Third-party imports
-import requests
 from bs4 import BeautifulSoup
 
 # Django imports
@@ -67,7 +68,6 @@ class WhatsAppWebhookView(View):
                             headers = {"Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"}
 
                             try:
-                                import requests
                                 requests.post(...)  # OK here
                             except:
                                 pass
@@ -215,7 +215,6 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     files = {'file':(file_name,file_data,file_type)}
 
                     try:
-                        import requests
                         requests.post(...)  # OK here
                     except:
                         pass
@@ -257,7 +256,6 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         wa_payload[msg_type]["caption"] = message
 
                     try:
-                        import requests
                         requests.post(...)  # OK here
                     except:
                         pass
@@ -322,9 +320,8 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         "file_url": extract_file_url_from_msg_body(msg.msg_body),
                         "sent_by": msg.msg_sent_by,
                     }
-
+                    #  api to give seniior to my my msg paste senior given api here 
                     try:
-                        import requests
                         requests.post("https://example.com/api/save_message.php", json=payload)
                     except:
                         pass
@@ -349,9 +346,9 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     }
                 }
 
+                #  api to give seniior to my my msg paste senior given api here 
                 try:
-                    import requests
-                    requests.post(...)  # OK here
+                    requests.post("https://example.com/api/save_message.php", json=msg_body)
                 except:
                     pass
 
