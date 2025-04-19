@@ -10,12 +10,13 @@ def filter_list_create_view(request):
         name = request.POST.get("filter_name")
         if name:
             Filter.objects.create(filter_name=name)
-        return redirect("filter:list_filter")  # name of your url
+        return redirect("filter:filter_module")  # name of your url
 
     filters = Filter.objects.all()
     return render(request, "filter/filter_page.html", {"filters": filters})
 
 def delete_filter(request, pk):
+    print(pk,'idddddddddddd')
     filter_obj = get_object_or_404(Filter, pk=pk)
     filter_obj.delete()
     return JsonResponse({"status": "deleted"})
