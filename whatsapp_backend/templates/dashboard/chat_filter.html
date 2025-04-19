@@ -1,0 +1,79 @@
+{% extends 'layouts/apps.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Chat Filter</h5>
+      </div>
+      <div class="card-body">
+        <form method="get" action="" class="row g-3">
+          <div class="col-md-4">
+            <label for="filter" class="form-label">Select Filter</label>
+            <select class="form-select" name="filter" id="filter" required>
+              <option value="">-- Choose Filter --</option>
+              {% for f in filters %}
+                <option value="{{ f.filter_name }}" {% if selected_filter == f.filter_name %}selected{% endif %}>{{ f.filter_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+  
+          <div class="col-md-4">
+            <label for="time_range" class="form-label">Time Range</label>
+            <select class="form-select" name="time_range" id="time_range">
+              <option value="today" {% if time_range == 'today' %}selected{% endif %}>Today</option>
+              <option value="week" {% if time_range == 'week' %}selected{% endif %}>This Week</option>
+              <option value="month" {% if time_range == 'month' %}selected{% endif %}>This Month</option>
+              <option value="year" {% if time_range == 'year' %}selected{% endif %}>This Year</option>
+            </select>
+          </div>
+  
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </form>
+  
+        <hr class="my-4">
+  
+        <h6>Results:</h6>
+        {% if page_obj.object_list %}
+        <ul class="list-group">
+            {% for phone in page_obj.object_list %}
+            <li class="list-group-item">{{ phone }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-muted">No results found for the selected filter and time range.</div>
+        {% endif %}
+
+        {% if page_obj %}
+        <ul class="pagination mt-4">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?filter={{ selected_filter }}&date_filter={{ time_range }}&page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?filter={{ selected_filter }}&date_filter={{ time_range }}&page={{ num }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?filter={{ selected_filter }}&date_filter={{ time_range }}&page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+        {% endif %}
+
+
+  
+      </div>
+    </div>
+  </div>
+  
+{% endblock content %}
+  
