@@ -327,6 +327,13 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
           </div>
           <input type="text" name="message" class="form-control mx-2" placeholder="Type a message...">
           <button class="btn btn-success" type="submit">Send</button>
+
+          <div id="chatLoader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; display: none; text-align: center;">
+            <div class="spinner-border text-success" role="status" style="width: 8rem; height: 8rem;">
+              <span class="visually-hidden">Sending...</span>
+            </div>
+          </div>
+
         </form>
       </div>
     </div>
@@ -460,13 +467,22 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       });
   }
   
-  setInterval(refreshChatUsers, 2000); //refresh in every 2 secs
+  setInterval(refreshChatUsers, 5000); //refresh in every 2 secs
 
 
   // ✅ Media dropdown toggle fix
   document.getElementById('mediaDropdown').addEventListener('click', function () {
     new bootstrap.Dropdown(this).toggle();
   });
+
+  // loading spinning screen 
+  function submitOnSelect(input) {
+    const form = input.closest("form");
+    if (form) {
+      document.getElementById("chatLoader").style.display = "block";  // Show loading
+      form.submit();  // Continue with submission
+    }
+  }
 
 </script>
 

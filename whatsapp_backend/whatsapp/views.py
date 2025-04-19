@@ -39,7 +39,7 @@ class WhatsAppWebhookView(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body.decode('utf-8'))
-            # print(data,'datassssssssssssssss')
+            print(data,'datassssssssssssssss')
             for entry in data.get("entry", []):
                 for change in entry.get("changes", []):
                     value = change.get("value", {})
