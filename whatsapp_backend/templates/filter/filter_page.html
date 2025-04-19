@@ -92,7 +92,10 @@
             <td class="ps-3">{{ f.filter_name }}</td>
             <td>
               <div class="d-flex gap-2">
-                <button class="btn btn-warning btn-sm" onclick="editFilter({{ f.id }})">Edit</button>
+                <button class="btn btn-warning btn-sm"
+                  data-id="{{ f.id }}"
+                  data-url="{% url 'filter:update_filter' f.id %}"
+                  onclick="editFilter(this)">Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteFilter({{ f.id }})">Delete</button>
               </div>
             </td>
@@ -137,15 +140,19 @@
     }
   }
   
-  function editFilter(id) {
-    fetch(`/filters/update/${id}/`)  // ✅ corrected this line
+  function editFilter(btn) {
+    const id = btn.getAttribute('data-id');
+    const url = btn.getAttribute('data-url');
+  
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         document.getElementById("filterInput").value = data.filter_name;
-        document.querySelector("#addModal form").action = `/filters/update/${id}/`;
+        document.querySelector("#addModal form").action = url;
         new bootstrap.Modal(document.getElementById('addModal')).show();
       });
   }
-  </script>
+
+</script>
 
 {% endblock content %}
