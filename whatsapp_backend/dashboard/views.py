@@ -60,19 +60,19 @@ class ChatFilter(LoginRequiredMixin,View):
             if time_range:
                 today = now().date()
 
-                if time_range == 'today':
+                if time_range == "today":
                     messages = messages.filter(created_date__date=today)
 
-                elif time_range == 'week':
+                elif time_range == "week":
                     week_ago = today - timedelta(days=7)
                     messages = messages.filter(created_date__date__gte=week_ago)
 
-                elif time_range == 'month':
+                elif time_range == "month":
                     month_ago = today - timedelta(days=30)
                     messages = messages.filter(created_date__date__gte=month_ago)
 
-                elif time_range == 'year':
-                    year_ago = today  = timedelta(days=365)
+                elif time_range == "year":
+                    year_ago = today - timedelta(days=365)
                     messages = messages.filter(created_date__date__gte=year_ago)
 
             matched_users = messages.values_list("usernumber", flat=True).distinct()
