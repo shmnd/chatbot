@@ -3,7 +3,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from .models import Filter
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 # Create your views here.
 
 
@@ -18,9 +17,7 @@ def filter_list_create_view(request):
     return render(request, "filter/filter_page.html", {"filters": filters})
 
 def delete_filter(request, pk):
-    print(pk,'delete idddddddddddd')
     filter_obj = get_object_or_404(Filter, pk=pk)
-    print(filter_obj,'objjjjjjjjjjjjjj')
     filter_obj.delete()
     
     filters = Filter.objects.all()

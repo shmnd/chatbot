@@ -61,6 +61,12 @@ class SendMessageWebhookView(View):
                 "sent_by": data.get("sent_by"),
             }
 
+            try:
+                import requests
+                requests.post(...)  # OK here
+            except:
+                pass
+
             res = requests.post("https://example.com/api/save_message.php", json=payload)
 
             if res.status_code == 200:

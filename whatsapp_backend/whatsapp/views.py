@@ -38,7 +38,7 @@ class WhatsAppWebhookView(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body.decode('utf-8'))
-            print(data,'datassssssssssssssss')
+            # print(data,'datassssssssssssssss')
             for entry in data.get("entry", []):
                 for change in entry.get("changes", []):
                     value = change.get("value", {})
@@ -329,6 +329,12 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                         "body": message
                     }
                 }
+
+                try:
+                    import requests
+                    requests.post(...)  # OK here
+                except:
+                    pass
 
                 send_res = requests.post(WA_URL,headers=WA_HEADERS,json=wa_payload)
                 # print("TEXT SEND STATUS:", send_res.status_code)
