@@ -421,8 +421,8 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     return "received";
   }
 
-  // ⏱️ Auto-refresh every 5 seconds tp fetch new users
-  setInterval(refreshMessages, 5000);
+  // ⏱️ Auto-refresh every 2 seconds tp fetch new users
+  setInterval(refreshMessages, 2000);
 
   function refreshChatUsers() {
     fetch("{% url 'whatsapp:fetch_users' %}")
@@ -460,7 +460,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       });
   }
   
-  setInterval(refreshChatUsers, 5000); //refresh in every 5 secs
+  setInterval(refreshChatUsers, 2000); //refresh in every 2 secs
 
 
   // ✅ Media dropdown toggle fix
