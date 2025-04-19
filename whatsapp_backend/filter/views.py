@@ -20,8 +20,14 @@ def filter_list_create_view(request):
 def delete_filter(request, pk):
     print(pk,'delete idddddddddddd')
     filter_obj = get_object_or_404(Filter, pk=pk)
+    print(filter_obj,'objjjjjjjjjjjjjj')
     filter_obj.delete()
-    return JsonResponse({"status": "deleted"})
+    
+    filters = Filter.objects.all()
+    return render(request, "filter/filter_page.html", {
+        "filters": filters
+    })
+
 
 @csrf_exempt
 def update_filter(request, pk):

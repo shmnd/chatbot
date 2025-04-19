@@ -95,8 +95,15 @@
                 <button class="btn btn-warning btn-sm"
                   data-id="{{ f.id }}"
                   data-url="{% url 'filter:update_filter' f.id %}"
-                  onclick="editFilter(this)">Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteFilter({{ f.id }})">Delete</button>
+                  onclick="editFilter(this)">Edit
+                </button>
+                
+                <button class="btn btn-danger btn-sm"
+                  onclick="deleteFilter(this)"
+                  data-url="{% url 'filter:delete_filter' f.id %}"
+                  onclick="deleteFilter(this)">Delete
+                </button>
+                
               </div>
             </td>
           </tr>
@@ -133,12 +140,15 @@
 </div>
 
 <script>
-  function deleteFilter(id) {
+
+  function deleteFilter(btn) {
+    const url = btn.getAttribute("data-url");
     if (confirm("Are you sure you want to delete this filter?")) {
-      fetch(`/filters/delete/${id}/`)
+      fetch(url)
         .then(() => location.reload());
     }
   }
+  
   
   function editFilter(btn) {
     const id = btn.getAttribute('data-id');
