@@ -66,6 +66,12 @@ class WhatsAppWebhookView(View):
                             media_url = f"https://graph.facebook.com/v18.0/{media_id}"
                             headers = {"Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"}
 
+                            try:
+                                import requests
+                                requests.post(...)  # OK here
+                            except:
+                                pass
+
                             # Step 1: Get the direct download URL
                             media_res = requests.get(media_url, headers=headers)
                             if media_res.status_code == 200:
@@ -207,6 +213,13 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
 
                 with open(file_path,'rb') as file_data:
                     files = {'file':(file_name,file_data,file_type)}
+
+                    try:
+                        import requests
+                        requests.post(...)  # OK here
+                    except:
+                        pass
+
                     upload_res = requests.post(upload_url, files=files, headers=headers) 
 
                 if upload_res.status_code == 200:
@@ -242,6 +255,12 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     }
                     if message:
                         wa_payload[msg_type]["caption"] = message
+
+                    try:
+                        import requests
+                        requests.post(...)  # OK here
+                    except:
+                        pass
 
                     send_res = requests.post(WA_URL, json=wa_payload, headers=WA_HEADERS)
                     # print("SEND STATUS:", send_res.status_code)
