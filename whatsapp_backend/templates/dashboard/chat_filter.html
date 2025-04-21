@@ -41,8 +41,10 @@
         <ul class="list-group">
         {% for phone,username in page_obj.object_list %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ username }}
-            {{ phone }}
+            <div>
+              <strong>{{ username|default:"Unnamed" }}</strong><br>
+              <small>{{ phone }}</small>
+            </div>
             <a href="{% url 'whatsapp:interface' %}?phone={{ phone }}" class="btn btn-sm btn-success" title="Open Chat">
                 <i class="fas fa-comment-dots"></i>
             </a>

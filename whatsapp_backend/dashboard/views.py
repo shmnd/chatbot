@@ -1,13 +1,15 @@
-from django.shortcuts import render
+from django.shortcuts import render,redirect,get_object_or_404
 from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from whatsapp.models import WhatsAppMessage
 from django.utils.timezone import now, datetime
 from whatsapp.models import WhatsAppMessage,whatsappUsers
 from filter.models import Filter
+from .models import Categories
 from django.core.paginator import Paginator
 from django.db.models import Max
+from django.views.decorators.csrf import csrf_exempt
+
 # Create your views here.
 
 
@@ -97,3 +99,53 @@ def unread_message_count_api(request):
     ).count()
 
     return JsonResponse({"unresponded_messages": unread_count})
+
+
+'''---------------------------------------------------------------- CATEGORY ----------------------------------------------------------'''
+
+def category_list_create_view(request):
+    if request.method == "POST":
+        name = request.POST.get("category_name")
+        message = request.POST.get("category_message")
+        if name and message:
+            Categories.objects.create(name=name,messages=message)
+        return redirect("home:category_module")  # name of your url
+
+    categories = Categories.objects.all()
+    return render(request, "dashboard/category.html", {"categories": categories})
+
+
+def delete_category(request, pk):
+    category_obj = get_object_or_404(Categories, pk=pk)
+    category_obj.delete()
+    
+    categorys = Categories.objects.all()
+    return render(request, "dashboard/category.html", {
+        "categorys": categorys
+    })
+
+
+@csrf_exempt
+def update_category(request, pk):
+    category_obj = get_object_or_404(Categories, pk=pk)
+
+    if request.method == "POST":
+        name = request.POST.get("category_name")
+        message = request.POST.get("category_message")
+
+        category_obj.name = name 
+        category_obj.messages = message 
+        category_obj.save()
+        
+
+        categories = Categories.objects.all()
+        return render(request, "dashboard/category.html", {
+            "categories": categories
+        })
+
+
+    # For GET request, return current filter name
+    return JsonResponse({
+        "name": category_obj.name,
+        "messages": category_obj.messages
+    })

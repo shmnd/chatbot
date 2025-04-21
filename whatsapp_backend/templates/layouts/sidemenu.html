@@ -72,7 +72,7 @@
 
                 <!--filter Sections-->
                 <div class="menu-item ">
-                    <a class="menu-link {% if request.resolver_match.url_name in 'home:our.home-images-view.index,update_home_image_order,delete_home_image_order' %} active {% endif %}"
+                    <a class="menu-link {% if request.resolver_match.url_name == 'filter_module' %}  active {% endif %}"
                         href="{% url 'filter:filter_module' %}">
                         <span class="menu-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel" viewBox="0 0 16 16">
@@ -80,6 +80,19 @@
                             </svg>
                         </span>
                         <span class="menu-title">Filter</span>
+                    </a>
+                </div>
+
+                <!--category Sections-->
+                <div class="menu-item ">
+                    <a class="menu-link {% if request.resolver_match.url_name == 'home' %}  active {% endif %}"
+                        href="{% url 'home:category_module' %}">
+                        <span class="menu-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-border-width" viewBox="0 0 16 16">
+                                <path d="M0 3.5A.5.5 0 0 1 .5 3h15a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H.5a.5.5 0 0 1-.5-.5zm0 5A.5.5 0 0 1 .5 8h15a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H.5a.5.5 0 0 1-.5-.5zm0 4a.5.5 0 0 1 .5-.5h15a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5"/>
+                            </svg>
+                        </span>
+                        <span class="menu-title">Category</span>
                     </a>
                 </div>
                
