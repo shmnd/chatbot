@@ -20,15 +20,15 @@
           </div>
   
           <div class="col-md-4">
-            <label for="time_range" class="form-label">Time Range</label>
-            <select class="form-select" name="time_range" id="time_range">
-              <option value="today" {% if time_range == 'today' %}selected{% endif %}>Today</option>
-              <option value="week" {% if time_range == 'week' %}selected{% endif %}>This Week</option>
-              <option value="month" {% if time_range == 'month' %}selected{% endif %}>This Month</option>
-              <option value="year" {% if time_range == 'year' %}selected{% endif %}>This Year</option>
-            </select>
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.GET.start_date }}">
           </div>
-  
+          
+          <div class="col-md-4">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.GET.end_date }}">
+          </div>
+          
           <div class="col-md-4 d-flex align-items-end">
             <button type="submit" class="btn btn-primary">Search</button>
           </div>
@@ -62,13 +62,15 @@
 
             {% for num in page_obj.paginator.page_range %}
             <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                <a class="page-link" href="?filter={{ selected_filter }}&date_filter={{ time_range }}&page={{ num }}">{{ num }}</a>
+              <a class="page-link" href="?filter={{ selected_filter }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ num }}">{{ num }}</a>
+
+
             </li>
             {% endfor %}
 
             {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?filter={{ selected_filter }}&date_filter={{ time_range }}&page={{ page_obj.next_page_number }}">Next</a>
+                <a class="page-link" href="?filter={{ selected_filter }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page_obj.next_page_number }}">Next</a>
             </li>
             {% endif %}
         </ul>

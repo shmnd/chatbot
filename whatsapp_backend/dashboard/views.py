@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from whatsapp.models import WhatsAppMessage
-from django.utils.timezone import now, timedelta
+from django.utils.timezone import now, datetime
 from whatsapp.models import WhatsAppMessage,whatsappUsers
 from filter.models import Filter
 from django.core.paginator import Paginator
@@ -48,7 +48,8 @@ class ChatFilter(LoginRequiredMixin,View):
 
         filters = Filter.objects.all()
         selected_filter = request.GET.get("filter", "")
-        time_range = request.GET.get("time_range", "")
+        start_date = request.GET.get("start_date", "")
+        end_date = request.GET.get("end_date", "")
         page_number = request.GET.get("page", 1)
 
         matched_users = []
@@ -59,23 +60,13 @@ class ChatFilter(LoginRequiredMixin,View):
             
             # Filter by time range
 
-            if time_range:
-                today = now().date()
-
-                if time_range == "today":
-                    messages = messages.filter(created_date__date=today)
-
-                elif time_range == "week":
-                    week_ago = today - timedelta(days=7)
-                    messages = messages.filter(created_date__date__gte=week_ago)
-
-                elif time_range == "month":
-                    month_ago = today - timedelta(days=30)
-                    messages = messages.filter(created_date__date__gte=month_ago)
-
-                elif time_range == "year":
-                    year_ago = today - timedelta(days=365)
-                    messages = messages.filter(created_date__date__gte=year_ago)
+            if start_date and end_date:
+                try:
+                    start = datetime.strptime(start_date, "%Y-%m-%d").date()
+                    end = datetime.strptime(end_date, "%Y-%m-%d").date()
+                    messages = messages.filter(created_date__date__range=(start, end))
+                except ValueError:
+                    pass  # Ignore invalid date formats
 
             matched_users = messages.values_list("usernumber", flat=True).distinct()
 
@@ -85,7 +76,8 @@ class ChatFilter(LoginRequiredMixin,View):
         return render(request,self.template_name,{
             'filters':filters,
             'selected_filter':selected_filter,
-            'time_range':time_range,
+            'start_date': start_date,
+            'end_date': end_date,
             'page_obj': page_obj
         })
     
