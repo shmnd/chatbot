@@ -12,5 +12,7 @@ urlpatterns = [
     path("category/", views.category_list_create_view, name="category_module"),
     path("category/delete/<int:pk>/", views.delete_category, name="delete_category"),
     path("category/update/<int:pk>/", views.update_category, name="update_category"),
+    path('category/<int:category_id>/users/', views.category_users_view, name='category_users'),
+
 
 ]   

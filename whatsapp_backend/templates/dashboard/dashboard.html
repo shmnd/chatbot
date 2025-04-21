@@ -66,6 +66,10 @@
     user-select: none;
     flex-shrink: 0;
   }
+
+  .c-dashboardInfo .wrap:after {
+    background: var(--card-color);
+  }
   
 </style>
 
@@ -76,7 +80,7 @@
       <div class="row align-items-stretch">
 
         <!-- Unread Messages Card -->
-        <div class="c-dashboardInfo col-lg-3 col-md-6">
+        <div class="c-dashboardInfo col-lg-3 col-md-6" style="--card-color: {{ category.color|default:'#00c48c' }};">
           <div class="wrap position-relative">
             <span id="unreadCountBadge" class="badge bg-danger position-absolute top-0 start-100 translate-middle">0</span>
             <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">
@@ -86,19 +90,6 @@
             <span id="unreadCountText" class="hind-font caption-12 c-dashboardInfo__count">{{unresponded_messages}}</span>
             <span class="hind-font caption-12 c-dashboardInfo__subInfo">
               <a href="{% url 'whatsapp:interface' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
-            </span>
-          </div>
-        </div>
-
-        <!-- All Contacts -->
-        <div class="c-dashboardInfo col-lg-3 col-md-6">
-          <div class="wrap">
-            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">All contacts
-              <svg class="MuiSvgIcon-root-19" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/></svg>
-            </h4>
-            <span class="hind-font caption-12 c-dashboardInfo__count">{{total_contact}}</span>
-            <span class="hind-font caption-12 c-dashboardInfo__subInfo">
-              <a href="{% url 'whatsapp:contacts' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
             </span>
           </div>
         </div>
@@ -116,6 +107,22 @@
           </div>
         </div>
 
+        {% for category in categories %}
+          <div class="c-dashboardInfo col-lg-3 col-md-6">
+            <div class="wrap">
+              <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">
+                {{ category.name }}
+              </h4>
+              <span class="hind-font caption-12 c-dashboardInfo__count">
+                {{ category.total_count|default:"0" }}
+              </span>
+              <span class="hind-font caption-12 c-dashboardInfo__subInfo">
+                <a href="{% url 'home:category_users' category.id %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+
         <!-- Keyword Search -->
         <div class="c-dashboardInfo col-lg-3 col-md-6">
           <div class="wrap">
@@ -125,6 +132,19 @@
             <span class="hind-font caption-12 c-dashboardInfo__count">{{filter_count}}</span>
             <span class="hind-font caption-12 c-dashboardInfo__subInfo">
               <a href="{% url 'home:chat_filter' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+            </span>
+          </div>
+        </div>
+
+         <!-- All Contacts -->
+         <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">All contacts
+              <svg class="MuiSvgIcon-root-19" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/></svg>
+            </h4>
+            <span class="hind-font caption-12 c-dashboardInfo__count">{{total_contact}}</span>
+            <span class="hind-font caption-12 c-dashboardInfo__subInfo">
+              <a href="{% url 'whatsapp:contacts' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
             </span>
           </div>
         </div>

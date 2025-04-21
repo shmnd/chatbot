@@ -25,15 +25,15 @@ class Homepage(LoginRequiredMixin,View):
         today = now().date()
         
         today_whatsapp_users = WhatsAppMessage.objects.filter(created_date__date = today).values('usernumber').distinct().count()
-
         total_contact = whatsappUsers.objects.all().distinct().count()
-
-        filter_count = Filter.objects.all().distinct().count
+        filter_count = Filter.objects.all().distinct().count()
+        categories = Categories.objects.all()
 
         return render(request,self.template_name,{
             'total_contact':total_contact,
             'today_whatsapp_users':today_whatsapp_users,
-            'filter_count':filter_count
+            'filter_count':filter_count,
+            'categories':categories,
         })
     
 
@@ -148,4 +148,28 @@ def update_category(request, pk):
     return JsonResponse({
         "name": category_obj.name,
         "messages": category_obj.messages
+    })
+
+
+
+def category_users_view(request, category_id):
+    category = get_object_or_404(Categories, id=category_id)
+
+    # Find users who sent a message matching the category message
+    matching_messages = WhatsAppMessage.objects.filter(msg_body__icontains=category.messages)
+
+    # Extract unique phone numbers from matching messages
+    phone_numbers = matching_messages.values_list('usernumber', flat=True).distinct()
+
+    # Get user records for those phone numbers
+    users_queryset  = whatsappUsers.objects.filter(user_num__in=phone_numbers)
+
+    # Add pagination
+    paginator = Paginator(users_queryset, 10)  # Show 10 users per page
+    page_number = request.GET.get("page")
+    users = paginator.get_page(page_number)
+
+    return render(request, "dashboard/category_users.html", {
+        "category": category,
+        "users": users
     })

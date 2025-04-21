@@ -49,7 +49,7 @@ class whatsappUsers(AbstractDateFieldMix):
     agent_id = models.IntegerField(default=0)
     timestamps = models.IntegerField(blank=True,null=True)
     msgstatus = models.IntegerField(default=0)
-    lead_status = models.IntegerField(default=1)
+    lead_status = models.CharField(max_length=255,blank=True,null=True)
 
     class Meta:
         db_table = 'db_wa_users'
