@@ -68,7 +68,7 @@ class ChatFilter(LoginRequiredMixin,View):
                 except ValueError:
                     pass  # Ignore invalid date formats
 
-            matched_users = messages.values_list("usernumber", flat=True).distinct()
+            matched_users = messages.values_list("usernumber", "temp_name").distinct()
 
         paginator = Paginator(matched_users, 15)  # 30 contacts per page
         page_obj = paginator.get_page(page_number)
