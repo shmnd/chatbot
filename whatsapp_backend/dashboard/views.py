@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from whatsapp.models import WhatsAppMessage
@@ -6,6 +7,7 @@ from django.utils.timezone import now, timedelta
 from whatsapp.models import WhatsAppMessage,whatsappUsers
 from filter.models import Filter
 from django.core.paginator import Paginator
+from django.db.models import Max
 # Create your views here.
 
 
@@ -87,3 +89,19 @@ class ChatFilter(LoginRequiredMixin,View):
             'page_obj': page_obj
         })
     
+
+def unread_message_count_api(request):
+    # Step 1: Get the latest message ID per user
+    latest_messages = WhatsAppMessage.objects.values('usernumber').annotate(last_msg_id=Max('msg_id'))
+
+    # Step 2: Extract the latest message IDs
+    latest_ids = [entry['last_msg_id'] for entry in latest_messages]
+
+    # Step 3: Count where latest message is from user (msg_sent_by=0) and not replied (msg_status=0)
+    unread_count = WhatsAppMessage.objects.filter(
+        msg_id__in=latest_ids,
+        msg_status=0,
+        msg_sent_by=0
+    ).count()
+
+    return JsonResponse({"unresponded_messages": unread_count})

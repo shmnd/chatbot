@@ -68,60 +68,88 @@
   }
   
 </style>
+
 <!--begin::Content wrapper-->
 <div class="d-flex flex-column flex-column-fluid">
-
   <div id="root">
     <div class="container pt-5">
       <div class="row align-items-stretch">
-        {% comment %} <div class="c-dashboardInfo col-lg-3 col-md-6">
-          <div class="wrap">
-            <!-- <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Total Projects<svg -->
-                <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Today WhatsApp<svg
-                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
-                <path fill="none" d="M0 0h24v24H0z"></path>
-              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_project}}</span><span
-              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'home:our.services-view.index' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span> 
-          </div>
-        </div> {% endcomment %}
-        
-        <div class="c-dashboardInfo col-lg-3 col-md-6">
-          <div class="wrap">
-            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">All contacts<svg
-                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
-                <path fill="none" d="M0 0h24v24H0z"></path>
-              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{total_contact}}</span><span
-              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'whatsapp:contacts' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
-          </div>
-        </div> 
 
+        <!-- Unread Messages Card -->
         <div class="c-dashboardInfo col-lg-3 col-md-6">
-          <div class="wrap">
-              <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Today WhatsApp<svg
-                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
-                <path fill="none" d="M0 0h24v24H0z"></path>
-              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{today_whatsapp_users}}</span><span
-              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href = "{% url 'whatsapp:interface' %}"><i style='font-size:24px' class='fas'>&#xf061;</i></a></span>
-          </div>
-        </div> 
-
-        <div class="c-dashboardInfo col-lg-3 col-md-6">
-          <div class="wrap">
-            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Search with Keyword<svg
-                class="MuiSvgIcon-root-19" focusable="false" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
-                <path fill="none" d="M0 0h24v24H0z"></path>
-              </svg></h4><span class="hind-font caption-12 c-dashboardInfo__count">{{filter_count}}</span><span
-              class="hind-font caption-12 c-dashboardInfo__subInfo"><a href="{% url 'home:chat_filter' %}"><i style='font-size:24px' class='fas'>&#xf061;</i><a></span> 
+          <div class="wrap position-relative">
+            <span id="unreadCountBadge" class="badge bg-danger position-absolute top-0 start-100 translate-middle">0</span>
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">
+              unresponsed WhatsApp
+              <svg class="MuiSvgIcon-root-19" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/></svg>
+            </h4>
+            <span id="unreadCountText" class="hind-font caption-12 c-dashboardInfo__count">{{unresponded_messages}}</span>
+            <span class="hind-font caption-12 c-dashboardInfo__subInfo">
+              <a href="{% url 'whatsapp:interface' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+            </span>
           </div>
         </div>
 
+        <!-- All Contacts -->
+        <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">All contacts
+              <svg class="MuiSvgIcon-root-19" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/></svg>
+            </h4>
+            <span class="hind-font caption-12 c-dashboardInfo__count">{{total_contact}}</span>
+            <span class="hind-font caption-12 c-dashboardInfo__subInfo">
+              <a href="{% url 'whatsapp:contacts' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+            </span>
+          </div>
+        </div>
+
+        <!-- Today WhatsApp -->
+        <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Today WhatsApp
+              <svg class="MuiSvgIcon-root-19" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/></svg>
+            </h4>
+            <span class="hind-font caption-12 c-dashboardInfo__count">{{today_whatsapp_users}}</span>
+            <span class="hind-font caption-12 c-dashboardInfo__subInfo">
+              <a href="{% url 'whatsapp:interface' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+            </span>
+          </div>
+        </div>
+
+        <!-- Keyword Search -->
+        <div class="c-dashboardInfo col-lg-3 col-md-6">
+          <div class="wrap">
+            <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">Search with Keyword
+              <svg class="MuiSvgIcon-root-19" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/></svg>
+            </h4>
+            <span class="hind-font caption-12 c-dashboardInfo__count">{{filter_count}}</span>
+            <span class="hind-font caption-12 c-dashboardInfo__subInfo">
+              <a href="{% url 'home:chat_filter' %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+            </span>
+          </div>
+        </div>
 
       </div>
     </div>
   </div>
-
 </div>
 <!--end::Content wrapper-->
+
+
+<script>
+  setInterval(() => {
+    fetch("{% url 'home:dashboard_unread_count' %}")
+      .then(res => res.json())
+      .then(data => {
+        const count = data.unresponded_messages;
+        const badge = document.getElementById("unreadCountBadge");
+        const countSpan = document.getElementById("unreadCountText");
+
+        if (badge) badge.textContent = count > 0 ? count : "";
+        if (countSpan) countSpan.textContent = count;
+      });
+  }, 2000);  // every 2 seconds
+</script>
 
 {% endblock content %}
   
