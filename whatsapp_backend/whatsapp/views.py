@@ -402,6 +402,9 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     id_phone=our_number, 
                 )
 
+                # ✅ Mark previous unread messages from this user as read
+                WhatsAppMessage.objects.filter(usernumber=phone, is_read=False).update(is_read=True)
+
         return HttpResponseRedirect(f"{request.path}?phone={phone}")
 
 class WhatsappContactView(LoginRequiredMixin,View):
