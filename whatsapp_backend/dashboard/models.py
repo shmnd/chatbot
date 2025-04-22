@@ -16,3 +16,9 @@ class Categories(AbstractDateFieldMix):
 
     def __str__(self):
         return self.name
+    
+class Lead(AbstractDateFieldMix):
+    lead_name = models.CharField(max_length=255,blank=True,null=True)
+
+    def __str__(self):
+        return self.lead_name

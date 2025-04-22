@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.timezone import now, datetime
 from whatsapp.models import WhatsAppMessage,whatsappUsers
 from filter.models import Filter
-from .models import Categories
+from .models import Categories,Lead
 from django.core.paginator import Paginator
 from django.db.models import Max
 from django.views.decorators.csrf import csrf_exempt
@@ -153,6 +153,76 @@ def update_category(request, pk):
 
 
 def category_users_view(request, category_id):
+    category = get_object_or_404(Categories, id=category_id)
+
+    # Find users who sent a message matching the category message
+    matching_messages = WhatsAppMessage.objects.filter(msg_body__icontains=category.messages)
+
+    # Extract unique phone numbers from matching messages
+    phone_numbers = matching_messages.values_list('usernumber', flat=True).distinct()
+
+    # Get user records for those phone numbers
+    users_queryset  = whatsappUsers.objects.filter(user_num__in=phone_numbers)
+
+    # Add pagination
+    paginator = Paginator(users_queryset, 10)  # Show 10 users per page
+    page_number = request.GET.get("page")
+    users = paginator.get_page(page_number)
+
+    return render(request, "dashboard/category_users.html", {
+        "category": category,
+        "users": users
+    })
+
+
+'''---------------------------------------------------------------- lead ----------------------------------------------------------'''
+
+def lead_list_create_view(request):
+    if request.method == "POST":
+        name = request.POST.get("lead_name")
+        if name:
+            Lead.objects.create(lead_name=name)
+        return redirect("home:lead_module")  # name of your url
+
+    leads = Lead.objects.all()
+    return render(request, "dashboard/lead.html", {"leads": leads})
+
+
+def delete_lead(request, pk):
+    lead_obj = get_object_or_404(Lead, pk=pk)
+    lead_obj.delete()
+    
+    leads = Lead.objects.all()
+    return render(request, "dashboard/head.html", {
+        "leads":leads
+    })
+
+
+@csrf_exempt
+def update_lead(request, pk):
+    lead_obj = get_object_or_404(Lead, pk=pk)
+
+    if request.method == "POST":
+        name = request.POST.get("lead_name")
+
+        lead_obj.lead_name = name 
+        lead_obj.save()
+        
+        leads = Lead.objects.all()
+        return render(request, "dashboard/lead.html", {
+            "leads":leads
+
+        })
+
+
+    # For GET request, return current filter name
+    return JsonResponse({
+        "name": lead_obj.lead_name,
+    })
+
+
+
+def lead_users_view(request, category_id):
     category = get_object_or_404(Categories, id=category_id)
 
     # Find users who sent a message matching the category message

@@ -14,5 +14,13 @@ urlpatterns = [
     path("category/update/<int:pk>/", views.update_category, name="update_category"),
     path('category/<int:category_id>/users/', views.category_users_view, name='category_users'),
 
+    #lead
+    path("lead/", views.lead_list_create_view, name="lead_module"),
+    path("lead/delete/<int:pk>/", views.delete_lead, name="delete_lead"),
+    path("lead/update/<int:pk>/", views.update_lead, name="update_lead"),
+    path('lead/<int:lead_id>/users/', views.lead_users_view, name='lead_users'),
+
+
+
 
 ]   
