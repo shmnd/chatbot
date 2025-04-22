@@ -1,0 +1,75 @@
+{% extends 'layouts/apps.html' %}
+{% block content %}
+
+
+<style>
+    table thead th {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      border: 1px solid #dee2e6 !important;
+    }
+    table td {
+      border: 1px solid #dee2e6 !important;
+      color: #212529;
+    }
+  </style>
+
+<div class="container mt-5">
+  <h4 class="mb-0"> Lead Name: <b>{{ lead.lead_name }}</b></h4>
+
+  <div class="table-responsive mt-4">
+    <table class="table table-bordered table-striped align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col">Phone</th>
+          <th scope="col">Name</th>
+          <th scope="col">Lead Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.user_num }}</td>
+          <td>{{ user.user_name }}</td>
+          <td>{{ user.lead_status }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-muted fst-italic">No users found for this Lead.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if users.paginator.num_pages > 1 %}
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center mt-4">
+      {% if users.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ users.previous_page_number }}">Previous</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+
+      {% for num in users.paginator.page_range %}
+      <li class="page-item {% if users.number == num %}active{% endif %}">
+        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+      </li>
+      {% endfor %}
+
+      {% if users.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ users.next_page_number }}">Next</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+
+{% endblock %}
