@@ -31,7 +31,7 @@ from django.utils.decorators import method_decorator
 from whatsapp.models import whatsappUsers, WhatsAppMessage
 from whatsapp.service.whatsapp_api import fetch_contact
 from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView
-
+from dashboard.models import Lead
 # Create your views here.
 @method_decorator(csrf_exempt, name='dispatch')
 class WhatsAppWebhookView(View):
@@ -125,6 +125,8 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
         user_exists = False
         user_name = search
         phone = ""  # Will be set only if there's an exact number match
+        leads = Lead.objects.all()
+        selected_user = None
 
         # Fetch filtered chat users based on name or number
         if search:
@@ -136,6 +138,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
             exact_match_user = whatsappUsers.objects.filter(user_num=search).first()
             if exact_match_user:
                 phone = search
+                selected_user = exact_match_user
                 user_exists = True
                 user_name = exact_match_user.user_name or phone
 
@@ -154,6 +157,13 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 clean_body = soup.text.split("Time:")[0].strip()
                 timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
+                try:
+                    user = whatsappUsers.objects.get(user_num=m.usernumber)
+                    lead = user.lead_status  # this is the ForeignKey object
+                    lead_name = lead.lead_name if lead else "None"
+                except whatsappUsers.DoesNotExist:
+                    lead_name = "None"
+
                 messages.append({
                     "msg_body": m.msg_body,
                     "msg_status": m.msg_status or 0,
@@ -165,6 +175,7 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     "mime_type": m.mime_type or "",
                     "local_date_time": m.local_date_time,
                     "sent_by": m.msg_sent_by,
+                    "lead_name": lead_name
                 })
 
         chat_users = sorted(
@@ -180,6 +191,8 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
             "user_name": user_name,
             "user_exists": user_exists,
             "chat_users": chat_users,
+            "leads":leads,
+            "user": selected_user, 
         })
 
 
@@ -524,3 +537,26 @@ class FetchChatUsersView(View):
             })
 
         return JsonResponse({"users": user_data})
+    
+
+def update_lead_status(request):
+    if request.method == "POST":
+        phone = request.POST.get("user_phone")
+        lead_id = request.POST.get("lead_status")
+
+        try:
+            user = whatsappUsers.objects.get(user_num=phone)
+        except whatsappUsers.DoesNotExist:
+            return redirect(request.META.get('HTTP_REFERER', '/'))  # No user? redirect back
+
+        try:
+            if lead_id:
+                lead_instance = Lead.objects.get(id=lead_id)
+                user.lead_status = lead_instance
+            else:
+                user.lead_status = None
+            user.save()
+        except Lead.DoesNotExist:
+            pass  # Invalid lead_id? silently skip or handle if needed
+
+        return redirect(request.META.get('HTTP_REFERER', '/'))

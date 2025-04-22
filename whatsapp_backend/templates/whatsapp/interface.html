@@ -217,6 +217,19 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
                 </div>
             </div>
     </div>
+
+    <form id="leadStatusForm" method="POST" action="{% url 'whatsapp:update_lead_status' %}" class="d-flex align-items-center">
+      {% csrf_token %}
+      <input type="hidden" name="user_phone" value="{{ user_phone }}">
+      <select class="form-select form-select-sm ms-3" name="lead_status" onchange="document.getElementById('leadStatusForm').submit();">
+        <option value="">None</option>
+        {% for lead in leads %}
+          <option value="{{ lead.id }}" {% if user.lead_status_id == lead.id %}selected{% endif %}>
+            {{ lead.lead_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
   
     <div class="text-end">
       <div class="text-muted" style="font-size: 0.9rem;">
@@ -467,7 +480,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       });
   }
   
-  setInterval(refreshChatUsers, 5000); //refresh in every 2 secs
+  setInterval(refreshChatUsers, 2000); //refresh in every 2 secs
 
 
   // ✅ Media dropdown toggle fix
