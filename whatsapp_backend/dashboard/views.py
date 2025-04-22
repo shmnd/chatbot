@@ -25,21 +25,33 @@ class Homepage(LoginRequiredMixin,View):
 
         today = now().date()
         
-        today_whatsapp_users = WhatsAppMessage.objects.filter(created_date__date = today).values('usernumber').distinct().count()
+        today_whatsapp_users = WhatsAppMessage.objects.filter(
+            created_date__date=today
+        ).values("usernumber").distinct().count()
 
         total_contact = whatsappUsers.objects.all().distinct().count()
         filter_count = Filter.objects.all().distinct().count()
+
         categories = Categories.objects.all()
         leads = Lead.objects.all()
 
         for category in categories:
-            message = category.messages.strip().lower()
-            category.total_count = WhatsAppMessage.objects.annotate(
+
+            message = (category.messages or "").strip().lower()
+
+            qs = WhatsAppMessage.objects.annotate(
                 cleaned_body=Lower(Trim('msg_body'))
-            ).filter(cleaned_body__icontains=message).values("usernumber").distinct().count()
+            ).filter(cleaned_body__icontains=message)
+
+            category.total_request = qs.values("usernumber").distinct().count()
+            category.unreaded_request = qs.filter(is_read=False).count()
+
+            # print(f"[{category.name}] Total: {category.total_request}, Unread: {category.unreaded_request}")
 
         for lead in leads:
-            lead.total_count = whatsappUsers.objects.filter(lead_status_id=lead.id).count()
+            lead.total_count = whatsappUsers.objects.filter(
+                lead_status_id=lead.id
+            ).count()
 
         return render(request,self.template_name,{
             'total_contact':total_contact,

@@ -107,6 +107,24 @@
     display: block;
   }
 
+  .unread-badge {
+    position: absolute;
+    top: 20px;
+    right: 10px;
+    background-color:rgb(232, 64, 64);
+    color: white;
+    font-size: 12px;
+    padding: 4px 7px;
+    border-radius: 50%;
+    font-weight: bold;
+    z-index: 10;
+    min-width: 30px;
+    min-height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
   
 </style>
 
@@ -136,6 +154,14 @@
         <!-- Unread Messages Card -->
         <div class="c-dashboardInfo col-lg-3 col-md-6" style="--card-color: {{ category.color|default:'#00c48c' }};">
           <div class="wrap position-relative">
+            
+            {% if category.unread_count > 0 %}
+              <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                {{ category.unread_count }}
+              </span>
+
+            {% endif %}
+
             <span id="unreadCountBadge" class="badge bg-danger position-absolute top-0 start-100 translate-middle">0</span>
             <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">
               unresponsed WhatsApp
@@ -161,21 +187,35 @@
           </div>
         </div>
 
-        {% for category in categories %}
+          {% for category in categories %}
           <div class="c-dashboardInfo col-lg-3 col-md-6">
-            <div class="wrap">
+            <div class="wrap position-relative">
+              
+              {% if category.unreaded_request > 0 %}
+              <span class="unread-badge">
+                  {{ category.unreaded_request }}
+                </span>
+              {% endif %}
+          
               <h4 class="heading heading5 hind-font medium-font-weight c-dashboardInfo__title">
                 {{ category.name }}
               </h4>
+
               <span class="hind-font caption-12 c-dashboardInfo__count">
-                {{ category.total_count|default:"0" }}
+                {{ category.total_request|default:"0" }}
               </span>
+
+              {% comment %} <!-- 🔴 Paste this line just below the count for testing -->
+              <p style="font-size: 12px; color: red;">Unread: {{ category.unreaded_request }}</p> {% endcomment %}
+
               <span class="hind-font caption-12 c-dashboardInfo__subInfo">
-                <a href="{% url 'home:category_users' category.id %}"><i class='fas' style='font-size:24px'>&#xf061;</i></a>
+                <a href="{% url 'home:category_users' category.id %}">
+                  <i class='fas' style='font-size:24px'>&#xf061;</i>
+                </a>
               </span>
             </div>
           </div>
-        {% endfor %}
+          {% endfor %}
 
         <!-- Keyword Search -->
         <div class="c-dashboardInfo col-lg-3 col-md-6">

@@ -31,7 +31,7 @@ class WhatsAppMessage(AbstractDateFieldMix):
     send_id           = models.CharField(max_length=500,blank=True, null=True)
     status            = models.IntegerField(blank=True, null=True)
     funnel_id         = models.IntegerField(blank=True, null=True)
-    is_read           = models.IntegerField(blank=True, null=True)
+    is_read           = models.BooleanField(blank=True, null=True,default=False)
     id                = models.IntegerField(blank=True, null=True)  # extra column in your table
     msg_sent_by       = models.IntegerField(blank=True, null=True)
 
