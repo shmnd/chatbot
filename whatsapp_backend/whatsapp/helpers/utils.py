@@ -1,6 +1,9 @@
+import requests
 import json
 from bs4 import BeautifulSoup
-from whatsapp.models import whatsappUsers, WhatsAppMessage
+from django.conf import settings
+from whatsapp.models import whatsappUsers,WhatsAppTemplate
+from dashboard.models import Categories
 from django.views import View
 from django.http import JsonResponse
 
@@ -76,3 +79,30 @@ class SendMessageWebhookView(View):
 
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
+        
+
+
+def sync_templates_from_meta():
+    url = f'https://graph.facebook.com/v18.0/{settings.WHATSAPP_BUSINESS_ID}/message_templates'
+    headers = {
+        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    res = requests.get(url, headers=headers)
+    if res.status_code == 200:
+        meta_templates = res.json().get("data", [])
+
+        # Example logic to get default category
+        default_category, _ = Categories.objects.get_or_create(name="Uncategorized")
+
+        for tpl in meta_templates:
+            WhatsAppTemplate.objects.update_or_create(
+                template_name=tpl["name"],
+                defaults={
+                    "category": default_category,
+                    "language": tpl.get("language") or "en_US",
+                    "description": tpl.get("status", ""),
+                    "variable_count": len(tpl.get("components", [])[0].get("parameters", [])),
+                    "has_media": any(comp["type"] == "HEADER" for comp in tpl["components"]),
+                }
+            )

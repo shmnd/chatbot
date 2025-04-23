@@ -1,5 +1,5 @@
 from django.db import models
-from dashboard.models import Lead
+from dashboard.models import Lead,Categories
 
 # Create your models here.
 
@@ -55,3 +55,16 @@ class whatsappUsers(AbstractDateFieldMix):
     class Meta:
         db_table = 'db_wa_users'
         # managed = False  # Since table already exists
+
+class WhatsAppTemplate(AbstractDateFieldMix):
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE, related_name="templates")
+    template_name = models.CharField(max_length=255)  # Meta template name
+    language = models.CharField(max_length=20, default="en_US")
+    has_media = models.BooleanField(default=False)
+    media_type = models.CharField(max_length=50, blank=True, null=True)  # image, video, etc
+    media_url = models.URLField(blank=True, null=True)
+    variable_count = models.IntegerField(default=0)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.template_name} ({self.category.name})"

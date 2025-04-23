@@ -243,7 +243,71 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
   <div class="d-flex flex-grow-1 overflow-hidden flex-wrap-on-mobile">
     <!-- Sidebar -->
       <div id="sidebarPanel" class="bg-light p-2 sidebar-panel" style="min-width: 250px; max-width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #ddd;">
-       
+
+        <!-- Trigger Button -->
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+          <strong class="ps-2"> Chats </strong>
+          <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal" data-bs-target="#templateChatModal">Template Chat</button>
+        </div>
+
+        <!-- Template Message Modal Form -->
+        <div class="modal fade" id="templateChatModal" tabindex="-1" aria-labelledby="templateChatModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="templateChatModalLabel">Start New Template Chat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form id="templateChatForm">
+                  <div class="row mb-3">
+                    <div class="col-md-4">
+                      <label for="categorySelect" class="form-label">Category</label>
+                      <select class="form-select" id="categorySelect" name="category" required>
+                        <option selected disabled>Select Category</option>
+                        <!-- Categories will be loaded dynamically -->
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="templateSelect" class="form-label">Template</label>
+                      <select class="form-select" id="templateSelect" name="template" required>
+                        <option selected disabled>Select Template</option>
+                        <!-- Templates based on selected category -->
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="phoneNumbers" class="form-label">WhatsApp Numbers</label>
+                      <input type="text" class="form-control" id="phoneNumbers" name="numbers" placeholder="Enter numbers, comma-separated" required>
+                    </div>
+                  </div>
+        
+                  <div class="row mb-3">
+                    <div class="col-md-12">
+                      <label class="form-label">Template Preview</label>
+                      <textarea class="form-control" rows="4" readonly id="templatePreview"></textarea>
+                    </div>
+                  </div>
+        
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label for="mediaFile" class="form-label">Attach Media (optional)</label>
+                      <input type="file" class="form-control" id="mediaFile" name="media">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Sending Status</label>
+                      <textarea class="form-control" rows="4" id="sendingStatus" readonly></textarea>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-success" form="templateChatForm">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div class="p-3 d-flex">
             <form method="get" action="{% url 'whatsapp:interface' %}" class="d-flex w-100">
             <input type="text" name="phone" class="form-control me-2" placeholder="Search phone number">
@@ -496,6 +560,27 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       form.submit();  // Continue with submission
     }
   }
+
+
+  {% comment %} template_messaage modal <!-- JS Logic to Load Categories/Templates Dynamically -->{% endcomment %}
+
+  document.getElementById('categorySelect').addEventListener('change', function() {
+    const categoryId = this.value;
+    const templateDropdown = document.getElementById('templateSelect');
+    templateDropdown.innerHTML = '<option selected disabled>Loading templates...</option>';
+
+    fetch(`/template_message_category/${categoryId}/`)
+      .then(res => res.json())
+      .then(data => {
+        templateDropdown.innerHTML = '<option selected disabled>Select Template</option>';
+        data.templates.forEach(template => {
+          const option = document.createElement('option');
+          option.value = template.id;
+          option.text = template.name;
+          templateDropdown.appendChild(option);
+        });
+      });
+  });
 
 </script>
 

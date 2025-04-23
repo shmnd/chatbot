@@ -28,10 +28,10 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 # Local app imports
-from whatsapp.models import whatsappUsers, WhatsAppMessage
+from whatsapp.models import whatsappUsers, WhatsAppMessage,WhatsAppTemplate
 from whatsapp.service.whatsapp_api import fetch_contact
-from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView
-from dashboard.models import Lead
+from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView,sync_templates_from_meta
+from dashboard.models import Lead,Categories
 # Create your views here.
 @method_decorator(csrf_exempt, name='dispatch')
 class WhatsAppWebhookView(View):
@@ -563,3 +563,134 @@ def update_lead_status(request):
             pass  # Invalid lead_id? silently skip or handle if needed
 
         return redirect(request.META.get('HTTP_REFERER', '/'))
+    
+# ----------------------------------------------------------------- TEMPLATE CHAT -----------------------------------------------------
+
+@method_decorator(csrf_exempt, name='dispatch')
+class FetchTemplatesByCategoryView(View):
+    def get(self, request, category_id):
+        try:
+            sync_templates_from_meta()
+            templates = WhatsAppTemplate.objects.filter(category_id=category_id)
+            data = [{"id": t.id, "name": t.template_name} for t in templates]  # template_name should match Meta name
+            return JsonResponse({"templates": data})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SendWhatsAppTemplateView(View):
+
+    def get(self, request):
+        try:
+            categories = Categories.objects.all()
+            url = 'https://graph.facebook.com/v18.0/{{WHATSAPP_BUSINESS_ID}}/message_templates'
+            print(url,'ur11111111111111111111111111111')
+
+
+            headers={
+                "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                "Content-Type": "application/json"
+            }
+            
+            response = request.get(url,headers=headers)
+
+            if response.status_code == 200:
+                templates = response.json().get('data',[])
+            else:
+                templates = []    
+                print("❌ Error fetching templates:", response.text)
+
+            return render(request,'whatsapp/interface.html',{
+                'categories':categories,
+                'templates':templates
+            })
+                    
+        except Exception as e:
+                return JsonResponse({"error": str(e)}, status=500)
+
+    def post(self, request):
+        try:
+            data = request.POST
+            files = request.FILES
+
+            category_id = data.get("category")
+            template_name = data.get("template")
+            numbers = data.get("numbers", "").split(",")
+            variables = json.loads(data.get("variables", "[]"))  # Expecting a JSON string list
+
+            media = files.get("media")
+            media_url = None
+            media_type = None
+
+            # 1. Upload media (optional)
+            if media:
+                file_type = media.content_type
+                upload_url = "https://dynoble.com/sales_new/application/views/waba/media_v2.php"
+                upload_response = requests.post(upload_url, files={"file": media})
+                if upload_response.status_code == 200:
+                    media_url = upload_response.json().get("url")
+
+                    if file_type.startswith("image/"):
+                        media_type = "image"
+                    elif file_type.startswith("video/"):
+                        media_type = "video"
+                    elif file_type.startswith("audio/"):
+                        media_type = "audio"
+                    else:
+                        media_type = "document"
+                else:
+                    return JsonResponse({"error": "Failed to upload media."}, status=500)
+
+            # 2. Send to all numbers
+            success, failed = [], []
+
+            for number in numbers:
+                number = number.strip()
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "to": number,
+                    "type": "template",
+                    "template": {
+                        "name": template_name,
+                        "language": {"code": "en_US"},
+                        "components": []
+                    }
+                }
+
+                # Add variables
+                if variables:
+                    payload["template"]["components"].append({
+                        "type": "body",
+                        "parameters": [{"type": "text", "text": v} for v in variables]
+                    })
+
+                # Add media
+                if media_url and media_type:
+                    payload["template"]["components"].append({
+                        "type": "header",
+                        "parameters": [{
+                            "type": media_type,
+                            media_type: {"link": media_url}
+                        }]
+                    })
+
+                # Send API request
+                response = requests.post(
+                    f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages",
+                    headers={
+                        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload
+                )
+
+                if response.status_code == 200:
+                    success.append(number)
+                else:
+                    failed.append({"number": number, "error": response.text})
+
+            return JsonResponse({"success": success, "failed": failed})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)

@@ -12,4 +12,9 @@ urlpatterns = [
     path("fetch_users/", views.FetchChatUsersView.as_view(), name="fetch_users"),
     path('update-lead-status/', views.update_lead_status, name='update_lead_status'),
 
+    # Template message
+    path('template_message_category/<int:category_id>/', views.FetchTemplatesByCategoryView.as_view(), name='get_templates_by_category'),
+    
+    path('template_message/',views.SendWhatsAppTemplateView.as_view(),name='template_message'),
+
 ]
