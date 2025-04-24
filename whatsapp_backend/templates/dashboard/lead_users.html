@@ -24,6 +24,7 @@
           <th scope="col">Phone</th>
           <th scope="col">Name</th>
           <th scope="col">Lead Status</th>
+          <th scope="col">Chat</th>
         </tr>
       </thead>
       <tbody>
@@ -32,6 +33,11 @@
           <td>{{ user.user_num }}</td>
           <td>{{ user.user_name }}</td>
           <td>{{ user.lead_status }}</td>
+          <td>
+            <a href="{% url 'whatsapp:interface' %}?phone={{ user.user_num }}" class="text-decoration-none text-danger">
+              View Chat →
+            </a>
+          </td>
         </tr>
         {% empty %}
         <tr>

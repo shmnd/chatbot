@@ -1,5 +1,4 @@
 from django.db import models
-
 # Create your models here.
 
 class AbstractDateFieldMix(models.Model):
@@ -9,7 +8,7 @@ class AbstractDateFieldMix(models.Model):
         abstract = True
 
 class Categories(AbstractDateFieldMix):
-    name = models.CharField(max_length=225,blank=True,null=True)
+    name = models.CharField(max_length=225,blank=True,null=True,default="Fresh lead")
     messages =  models.TextField(blank=True,null=True)
     total_request = models.IntegerField(default=0,blank=True,null=True)
     unreaded_request = models.IntegerField(default=0,blank=True,null=True)

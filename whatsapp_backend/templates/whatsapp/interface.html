@@ -222,7 +222,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       {% csrf_token %}
       <input type="hidden" name="user_phone" value="{{ user_phone }}">
       <select class="form-select form-select-sm ms-3" name="lead_status" onchange="document.getElementById('leadStatusForm').submit();">
-        <option value="">None</option>
+        {% comment %} <option value="">None</option> {% endcomment %}
         {% for lead in leads %}
           <option value="{{ lead.id }}" {% if user.lead_status_id == lead.id %}selected{% endif %}>
             {{ lead.lead_name }}
@@ -402,7 +402,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
             <input type="file" name="attachment" id="uploadAudio" accept="audio/*" hidden onchange="submitOnSelect(this)">
             <input type="file" name="attachment" id="uploadDoc" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden onchange="submitOnSelect(this)">
           </div>
-          <input type="text" name="message" class="form-control mx-2" placeholder="Type a message...">
+          <input type="textarea" name="message" class="form-control mx-2" placeholder="Type a message...">
           <button class="btn btn-success" type="submit">Send</button>
 
           <div id="chatLoader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; display: none; text-align: center;">

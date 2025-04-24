@@ -1,5 +1,4 @@
 from django.db import models
-from dashboard.models import Lead,Categories
 
 # Create your models here.
 
@@ -12,7 +11,6 @@ class AbstractDateFieldMix(models.Model):
 
 
 class WhatsAppMessage(AbstractDateFieldMix):
-
     msg_id            = models.AutoField(primary_key=True)
     uid               = models.IntegerField(blank=True, null=True)
     id_phone          = models.CharField(max_length=250,blank=True, null=True)
@@ -50,14 +48,14 @@ class whatsappUsers(AbstractDateFieldMix):
     agent_id = models.IntegerField(default=0)
     timestamps = models.IntegerField(blank=True,null=True)
     msgstatus = models.IntegerField(default=0)
-    lead_status = models.ForeignKey(Lead,on_delete=models.SET_NULL,null=True,blank=True)
+    lead_status = models.ForeignKey("dashboard.Lead",on_delete=models.SET_NULL,null=True,blank=True)
 
     class Meta:
         db_table = 'db_wa_users'
         # managed = False  # Since table already exists
 
 class WhatsAppTemplate(AbstractDateFieldMix):
-    category = models.ForeignKey(Categories, on_delete=models.CASCADE, related_name="templates")
+    category = models.ForeignKey("dashboard.Categories", on_delete=models.SET_NULL, null=True, blank=True, related_name="templates")
     template_name = models.CharField(max_length=255)  # Meta template name
     language = models.CharField(max_length=20, default="en_US")
     has_media = models.BooleanField(default=False)
@@ -67,4 +65,4 @@ class WhatsAppTemplate(AbstractDateFieldMix):
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.template_name} ({self.category.name})"
+        return f"{self.template_name} "#({self.category.name})"

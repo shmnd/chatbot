@@ -3,14 +3,14 @@ from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.timezone import now, datetime
-from whatsapp.models import WhatsAppMessage,whatsappUsers
+from whatsapp.models import WhatsAppMessage,whatsappUsers,WhatsAppTemplate
 from filter.models import Filter
 from .models import Categories,Lead
 from django.core.paginator import Paginator
 from django.db.models import Max
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import Lower, Trim
-
+from django.db.models import Q
 # Create your views here.
 
 
@@ -129,12 +129,24 @@ def category_list_create_view(request):
     if request.method == "POST":
         name = request.POST.get("category_name")
         message = request.POST.get("category_message")
+        template_ids = request.POST.getlist("templates")
+
         if name and message:
-            Categories.objects.create(name=name,messages=message)
-        return redirect("home:category_module")  # name of your url
+            category = Categories.objects.create(name=name, messages=message)
+            
+            # Assign selected templates to this category
+            WhatsAppTemplate.objects.filter(id__in=template_ids).update(category=category)
+
+        return redirect("home:category_module")
 
     categories = Categories.objects.all()
-    return render(request, "dashboard/category.html", {"categories": categories})
+
+    for category in categories:
+        category.template_ids = ",".join(map(str, category.templates.values_list('id', flat=True)))
+
+    templates = WhatsAppTemplate.objects.filter(category__isnull=True) # only unassigned templates
+    
+    return render(request, "dashboard/category.html", {"categories": categories,"templates": templates})
 
 
 def delete_category(request, pk):
@@ -154,15 +166,28 @@ def update_category(request, pk):
     if request.method == "POST":
         name = request.POST.get("category_name")
         message = request.POST.get("category_message")
+        template_ids = request.POST.getlist("templates")
 
         category_obj.name = name 
         category_obj.messages = message 
         category_obj.save()
         
+        # Unassign templates from this category first
+        WhatsAppTemplate.objects.filter(category=category_obj).update(category=None)
+
+        # Re-assign selected ones
+        WhatsAppTemplate.objects.filter(id__in=template_ids).update(category=category_obj)
 
         categories = Categories.objects.all()
+
+        for category in categories:
+            category.template_ids = ",".join(map(str, category.templates.values_list('id', flat=True))) 
+
+        # ✅ Fetch templates assigned to this category OR unassigned
+        templates = WhatsAppTemplate.objects.filter(category__isnull=True)
         return render(request, "dashboard/category.html", {
-            "categories": categories
+            "categories": categories,
+            'templates': templates
         })
 
 
@@ -201,7 +226,7 @@ def category_users_view(request, category_id):
 
 def lead_list_create_view(request):
     if request.method == "POST":
-        name = request.POST.get("lead_name")
+        name = request.POST.get("lead_name",'Fresh lead')
         if name:
             Lead.objects.create(lead_name=name)
         return redirect("home:lead_module")  # name of your url

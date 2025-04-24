@@ -84,6 +84,7 @@
           <tr>
             <th class="text-dark fw-semibold" style="width: 35%;">Category Name</th>
             <th class="text-dark fw-semibold" style="width: 45%;">Category message</th>
+            <th class="text-dark fw-semibold" style="width: 45%;">Templates</th>
             <th class="text-dark fw-semibold" style="width: 30%;">Actions</th>
           </tr>
         </thead>
@@ -92,10 +93,20 @@
           <tr>
             <td class="ps-3">{{ category.name }}</td>  {% comment %} qqqqqqqqqqq  {% endcomment %} 
             <td class="ps-3">{{ category.messages }}</td>
+            <td class="ps-3">
+              {% for template in category.templates.all %}
+                <span class="badge bg-info text-dark mb-1">{{ template.template_name }}</span>
+              {% empty %}
+                <span class="text-muted">No templates</span>
+              {% endfor %}
+            </td>
             <td>
               <div class="d-flex gap-2">
                 <button class="btn btn-warning btn-sm"
                   data-id="{{ category.id }}"
+                  data-name="{{ category.name }}"
+                  data-message="{{ category.messages }}"
+                  data-templates="{{ category.template_ids }}"
                   data-url="{% url 'home:update_category' category.id %}"
                   onclick="editCategory(this)">Edit
                 </button>
@@ -134,6 +145,13 @@
       <div class="modal-body">
         <input type="text" name="category_name" id="categoryNameInput" class="form-control" placeholder="Enter Category name" required> {% comment %} qqqqqqqqqqq  {% endcomment %}
         <input type="text" name="category_message" id="categoryMessageInput" class="form-control" placeholder="Enter Category message" required> 
+
+        <label for="templateSelect">Assign Templates</label>
+        <select id="templateSelect" name="templates" multiple>
+          {% for template in templates %}
+            <option value="{{ template.id }}" {% if template.id in selected_template_ids %}selected{% endif %}>{{ template.template_name }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary">Save Category</button>
@@ -153,22 +171,55 @@
   }
   
   
-  function editCategory(btn) {
-    const id = btn.getAttribute('data-id');
-    const url = btn.getAttribute('data-url');
+  function editCategory(button) {
+    const id = button.getAttribute("data-id");
+    const name = button.getAttribute("data-name");
+    const message = button.getAttribute("data-message");
+    const templates = button.getAttribute("data-templates")?.split(",") || [];
 
+    // Set form fields
+    document.getElementById("categoryNameInput").value = name;
+    document.getElementById("categoryMessageInput").value = message;
   
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("categoryNameInput").value = data.name;
-        document.getElementById("categoryMessageInput").value = data.messages;
-        document.querySelector("#addModal form").action = url;
-        new bootstrap.Modal(document.getElementById('addModal')).show();
-      });
+    // Set templates as selected
+    const select = document.getElementById("templateSelect");
+    for (let option of select.options) {
+      option.selected = templates.includes(option.value);
     }
   
+    // Set the form's action to the edit URL
+    document.querySelector("#addModal form").action = button.getAttribute("data-url");
+  
+    // Open the modal
+    const modal = new bootstrap.Modal(document.getElementById('addModal'));
+    modal.show();
+  }
+
+  // Clear modal on add
+  document.querySelector('[data-bs-target="#addModal"]').addEventListener('click', function () {
+    document.getElementById("categoryNameInput").value = "";
+    document.getElementById("categoryMessageInput").value = "";
+    const select = document.getElementById("templateSelect");
+    for (let option of select.options) option.selected = false;
+    document.querySelector("#addModal form").action = "{% url 'home:category_module' %}";
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const element = document.getElementById('templateSelect');
+    const choices = new Choices(element, {
+      removeItemButton: true,
+      placeholder: true,
+      placeholderValue: 'Select templates',
+      shouldSort: false,
+      searchEnabled: true,
+    });
+  });
 
 </script>
+
+<!-- In your base template or directly in the page -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
 
 {% endblock content %}

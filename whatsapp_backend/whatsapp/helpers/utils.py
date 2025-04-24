@@ -92,14 +92,11 @@ def sync_templates_from_meta():
     if res.status_code == 200:
         meta_templates = res.json().get("data", [])
 
-        # Example logic to get default category
-        default_category, _ = Categories.objects.get_or_create(name="Uncategorized")
 
         for tpl in meta_templates:
             WhatsAppTemplate.objects.update_or_create(
                 template_name=tpl["name"],
                 defaults={
-                    "category": default_category,
                     "language": tpl.get("language") or "en_US",
                     "description": tpl.get("status", ""),
                     "variable_count": len(tpl.get("components", [])[0].get("parameters", [])),
