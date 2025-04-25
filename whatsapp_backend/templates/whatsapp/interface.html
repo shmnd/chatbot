@@ -284,7 +284,10 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
                   <div class="row mb-3">
                     <div class="col-md-12">
                       <label class="form-label">Template Preview</label>
-                      <textarea class="form-control" rows="4" readonly id="templatePreview"></textarea>
+                      <div class="form-control" id="templatePreview" style="min-height: 200px; white-space: pre-wrap;"></div>
+                      <div id="variableInputs" class="row mt-2">
+                        <!-- JS will populate variable inputs here -->
+                      </div>
                     </div>
                   </div>
         
@@ -569,19 +572,130 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     const templateDropdown = document.getElementById('templateSelect');
     templateDropdown.innerHTML = '<option selected disabled>Loading templates...</option>';
 
-    fetch(`/template_message_category/${categoryId}/`)
+    fetch(`/whatsapp/template_message_category/${categoryId}/`)
       .then(res => res.json())
       .then(data => {
         templateDropdown.innerHTML = '<option selected disabled>Select Template</option>';
         data.templates.forEach(template => {
           const option = document.createElement('option');
-          option.value = template.id;
+          // option.value = template.id;
+          option.value = template.name;
           option.text = template.name;
+          option.setAttribute('data-id', template.id); 
           templateDropdown.appendChild(option);
+        });
+      });
+    
+  });
+
+  document.getElementById('templateChatModal').addEventListener('show.bs.modal', function () {
+    
+    const categoryDropdown = document.getElementById('categorySelect');
+    const templateDropdown = document.getElementById('templateSelect');
+    categoryDropdown.innerHTML = '<option selected disabled>Loading categories...</option>';
+  
+    fetch('/whatsapp/message_categories/')  // make sure this endpoint returns your categories
+      .then(res => res.json())
+      .then(data => {
+        categoryDropdown.innerHTML = '<option selected disabled>Select Category</option>';
+        data.categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.id;
+          option.text = cat.name;
+          categoryDropdown.appendChild(option);
         });
       });
   });
 
+  document.getElementById('templateSelect').addEventListener('change', function () {
+    const templateId = this.options[this.selectedIndex].getAttribute('data-id');
+    const previewArea = document.getElementById('templatePreview');
+    const variableContainer = document.getElementById('variableInputs');
+  
+    previewArea.innerHTML = 'Loading preview...';
+    variableContainer.innerHTML = ''; // Clear previous
+  
+    fetch(`/whatsapp/template_preview/${templateId}/`)
+      .then(res => res.json())
+      .then(data => {
+        let previewHTML = `<b>Template Name</b>: ${data.template_name}<br><br>`;
+        previewHTML += `<b>Message</b>:<br><br>`;
+  
+        if (data.has_media && data.media_url) {
+          previewHTML += `<img src="${data.media_url}" style="max-width:100%; height:auto;" /><br><br>`;
+        }
+  
+        previewHTML += `<pre style="white-space: pre-wrap;">${data.description}</pre>`;
+  
+        previewArea.innerHTML = previewHTML;
+
+
+        // Generate variable fields
+        for (let i = 0; i < data.variable_count; i++) {
+          const inputGroup = document.createElement('div');
+          inputGroup.classList.add('col-md-6', 'mb-2');
+          inputGroup.innerHTML = `
+            <label class="form-label">Variable ${i + 1}</label>
+            <input type="text" class="form-control template-variable" name="variable_${i}" placeholder="Enter value">
+          `;
+          variableContainer.appendChild(inputGroup);
+        }
+
+      })
+      .catch(err => {
+        previewArea.innerHTML = `<span style="color:red;">Failed to load preview.</span>`;
+      });
+  });
+
+  document.getElementById('templateChatForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevent default form submission
+  
+    const categoryId = document.getElementById('categorySelect').value;
+    const numbersInput = document.getElementById('phoneNumbers').value;
+    const numbers = numbersInput.split(',').map(num => num.trim());
+    const templateId = document.getElementById('templateSelect').value;
+    const mediaFile = document.getElementById('mediaFile').files[0];
+    const variableInputs = document.querySelectorAll('.template-variable');
+    const variables = Array.from(variableInputs).map(input => input.value.trim());
+  
+    const formData = new FormData();
+    formData.append('category', categoryId);
+    formData.append('template', templateId);
+    formData.append('template_id', templateId);
+    //formData.append('numbers', JSON.stringify(numbers));
+    formData.append('numbers', numbers.join(','));
+    formData.append('variables', JSON.stringify(variables));
+    if (mediaFile) {
+      formData.append('media', mediaFile);
+    }
+  
+    fetch('/whatsapp/send_template_message/', {
+      method: 'POST',
+      body: formData
+    })
+
+    .then(response => {
+      // Ensure response is JSON and not HTML
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return response.json();
+      } else {
+        console.log("🚨 Not JSON response:", response);
+        throw new Error("Not a JSON response");
+      }
+    })
+    
+    .then(data => {
+      document.getElementById('sendingStatus').value = "✅ Message sent successfully!";
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('sendingStatus').value = "❌ Error sending message.";
+    });
+  });
+  
+  
+  
 </script>
 
 <!-- ✅ Correct Bootstrap Bundle that includes Popper -->

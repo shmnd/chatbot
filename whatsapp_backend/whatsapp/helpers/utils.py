@@ -92,14 +92,33 @@ def sync_templates_from_meta():
     if res.status_code == 200:
         meta_templates = res.json().get("data", [])
 
-
         for tpl in meta_templates:
+
+            components = tpl.get("components", [])
+            header = next((c for c in components if c["type"] == "HEADER"), None)
+            body = next((c for c in components if c["type"] == "BODY"), None)
+
+            # Extract media if present
+            media_url = None
+            media_type = None
+            if header and header.get("format") == "IMAGE":
+                header_example = header.get("example", {})
+                handles = header_example.get("header_handle", [])
+                if handles:
+                    media_url = handles[0]
+                    media_type = "image"
+
+            # Store the full components JSON in the description
+            description_json = json.dumps({"components": components})
+
             WhatsAppTemplate.objects.update_or_create(
                 template_name=tpl["name"],
                 defaults={
                     "language": tpl.get("language") or "en_US",
-                    "description": tpl.get("status", ""),
-                    "variable_count": len(tpl.get("components", [])[0].get("parameters", [])),
-                    "has_media": any(comp["type"] == "HEADER" for comp in tpl["components"]),
+                    "description": description_json,
+                    "variable_count": len(body.get("parameters", [])) if body and "parameters" in body else 0,
+                    "has_media": bool(media_url),
+                    "media_type": media_type,
+                    "media_url": media_url,
                 }
             )

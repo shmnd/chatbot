@@ -13,8 +13,9 @@ urlpatterns = [
     path('update-lead-status/', views.update_lead_status, name='update_lead_status'),
 
     # Template message
+    path('message_categories/', views.FetchCategoriesView.as_view(), name='get_all_categories'),
     path('template_message_category/<int:category_id>/', views.FetchTemplatesByCategoryView.as_view(), name='get_templates_by_category'),
-    
-    path('template_message/',views.SendWhatsAppTemplateView.as_view(),name='template_message'),
+    path('template_preview/<int:template_id>/', views.GetTemplatePreview.as_view(), name='template_preview'),
+    path('send_template_message/',views.SendWhatsAppTemplateView.as_view(),name='send_template_message'),
 
 ]

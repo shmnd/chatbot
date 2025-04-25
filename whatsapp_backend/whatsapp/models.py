@@ -56,12 +56,13 @@ class whatsappUsers(AbstractDateFieldMix):
 
 class WhatsAppTemplate(AbstractDateFieldMix):
     category = models.ForeignKey("dashboard.Categories", on_delete=models.SET_NULL, null=True, blank=True, related_name="templates")
-    template_name = models.CharField(max_length=255)  # Meta template name
-    language = models.CharField(max_length=20, default="en_US")
-    has_media = models.BooleanField(default=False)
-    media_type = models.CharField(max_length=50, blank=True, null=True)  # image, video, etc
-    media_url = models.URLField(blank=True, null=True)
-    variable_count = models.IntegerField(default=0)
+    template_name = models.CharField(max_length=255,null=True,blank=True)  # Meta template name
+    template_body = models.TextField(null=True,blank=True)
+    language = models.CharField(max_length=250, default="en_US",null=True,blank=True)
+    has_media = models.BooleanField(default=False,null=True,blank=True)
+    media_type = models.CharField(max_length=250, blank=True, null=True)  # image, video, etc
+    media_url = models.URLField(max_length=10000,blank=True, null=True)
+    variable_count = models.IntegerField(default=0,null=True,blank=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
