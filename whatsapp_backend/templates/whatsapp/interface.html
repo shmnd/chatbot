@@ -374,7 +374,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
                       <a href="{{ message.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>
                     {% endif %}
                   {% else %}
-                    {{ message.clean_body|safe }}
+                    {{ message.clean_body|linebreaksbr|safe }}
                   {% endif %}
                   <div class="timestamp">Time: {{ message.timestamp }} — 
                     {% if message.msg_status == 1 %}sent{% elif message.msg_status == 2 %}delivered{% elif message.msg_status == 3 %}read{% else %}received{% endif %}
@@ -405,7 +405,9 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
             <input type="file" name="attachment" id="uploadAudio" accept="audio/*" hidden onchange="submitOnSelect(this)">
             <input type="file" name="attachment" id="uploadDoc" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden onchange="submitOnSelect(this)">
           </div>
-          <input type="textarea" name="message" class="form-control mx-2" placeholder="Type a message...">
+          {% comment %} <input type="textarea" name="message" class="form-control mx-2" placeholder="Type a message..."> {% endcomment %}
+          <textarea name="message" class="form-control mx-2" placeholder="Type a message..." rows="1"></textarea>
+
           <button class="btn btn-success" type="submit">Send</button>
 
           <div id="chatLoader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; display: none; text-align: center;">
@@ -502,8 +504,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
         html += `<a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>`;
       }
     } else {
-      html += message.clean_body || "";
-    }
+      html += message.clean_body ? message.clean_body.replace(/\n/g, '<br>') : "";
 
     html += `<div class="timestamp">Time: ${timestamp || "--"} — ${getStatusLabel(message.msg_status)}</div>`;
     return html;
@@ -727,6 +728,35 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       document.getElementById('sendingStatus').value = "❌ Error sending message.";
     });
   });
+
+  document.getElementById('messageInput').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();  // Prevent form submission (Enter key press)
+          sendMessage();  // Your function to send the message
+      }
+      else if (event.key === 'Enter' && event.shiftKey) {
+          // Allow line break if Shift + Enter is pressed
+          const input = event.target;
+          const cursorPosition = input.selectionStart;
+          const message = input.value;
+          input.value = message.slice(0, cursorPosition) + '\n' + message.slice(cursorPosition);
+          input.selectionStart = input.selectionEnd = cursorPosition + 1;
+      }
+  });
+
+  // prevent enter form submission
+  document.querySelector('textarea[name="message"]').addEventListener('keypress', function(e) {
+    // Check if the key pressed is Enter (key code 13)
+    if (e.keyCode === 13) {
+      // Allow new lines on Enter press (do not submit the form)
+      if (e.shiftKey) {
+        // Shift + Enter adds a newline
+        return;
+      }
+      e.preventDefault();  // Prevent form submission on Enter
+    }
+  });
+
   
 </script>
 
