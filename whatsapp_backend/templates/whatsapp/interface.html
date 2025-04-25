@@ -504,7 +504,8 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
         html += `<a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">📄 View Document</a>`;
       }
     } else {
-      html += message.clean_body ? message.clean_body.replace(/\n/g, '<br>') : "";
+      html += message.clean_body ? message.clean_body.replace(/\n/g, '<br>') : (message.clean_body || "");
+    }
 
     html += `<div class="timestamp">Time: ${timestamp || "--"} — ${getStatusLabel(message.msg_status)}</div>`;
     return html;
