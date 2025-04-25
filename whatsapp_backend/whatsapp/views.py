@@ -622,137 +622,137 @@ class GetTemplatePreview(View):
             return JsonResponse({"error": "Template not found."}, status=404)
 
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# class SendWhatsAppTemplateView(View):
+@method_decorator(csrf_exempt, name='dispatch')
+class SendWhatsAppTemplateView(View):
 
-#     def get(self, request):
-#         try:
-#             categories = Categories.objects.all()
-#             url = 'https://graph.facebook.com/v18.0/{{WHATSAPP_BUSINESS_ID}}/message_templates'
+    def get(self, request):
+        try:
+            categories = Categories.objects.all()
+            url = 'https://graph.facebook.com/v18.0/{{WHATSAPP_BUSINESS_ID}}/message_templates'
 
-#             headers={
-#                 "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
-#                 "Content-Type": "application/json"
-#             }
+            headers={
+                "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                "Content-Type": "application/json"
+            }
             
-#             response = requests.get(url,headers=headers)
+            response = requests.get(url,headers=headers)
 
-#             if response.status_code == 200:
-#                 templates = response.json().get('data',[])
-#             else:
-#                 templates = []    
-#                 print("❌ Error fetching templates:", response.text)
+            if response.status_code == 200:
+                templates = response.json().get('data',[])
+            else:
+                templates = []    
+                print("❌ Error fetching templates:", response.text)
 
-#             return render(request,'whatsapp/interface.html',{
-#                 'categories':categories,
-#                 'templates':templates
-#             })
+            return render(request,'whatsapp/interface.html',{
+                'categories':categories,
+                'templates':templates
+            })
                     
-#         except Exception as e:
-#                 return JsonResponse({"error": str(e)}, status=500)
+        except Exception as e:
+                return JsonResponse({"error": str(e)}, status=500)
 
-#     def post(self, request):
-#         try:
-#             data = request.POST
-#             files = request.FILES
+    def post(self, request):
+        try:
+            data = request.POST
+            files = request.FILES
 
-#             category_id = data.get("category")
-#             template_name = data.get("template") or data.get("template_id") 
-#             numbers = data.get("numbers", "").split(",")
-#             variables = json.loads(data.get("variables", "[]"))  # Expecting a JSON string list
+            category_id = data.get("category")
+            template_name = data.get("template") or data.get("template_id") 
+            numbers = data.get("numbers", "").split(",")
+            variables = json.loads(data.get("variables", "[]")) 
 
-#             if not template_name or not numbers:
-#                 return JsonResponse({"error": "Missing template or numbers"}, status=400)
+            if not template_name or not numbers:
+                return JsonResponse({"error": "Missing template or numbers"}, status=400)
 
-#             media = files.get("media")
-#             media_url = None
-#             # Get the template object
-#             template_obj = WhatsAppTemplate.objects.filter(template_name=template_name).first()
+            media = files.get("media")
+            media_id = None  # use only if uploading new media
 
-#             # Check if the template has media stored
-#             if template_obj and template_obj.has_media and template_obj.media_url:
-#                 media_url = template_obj.media_url
-#                 print(media_url,'urllllllllllllll')
-#             else:
-#                 # 1. Upload media (optional)
-#                 if media:
-#                     upload_response = requests.post(
-#                         f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
-#                         headers={
-#                             "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
-#                         },
-#                         files={"file": media}
-#                     )
+            template_obj = WhatsAppTemplate.objects.filter(template_name=template_name).first()
 
-#                     if upload_response.status_code == 200:
-#                         media_url = upload_response.json().get("url")
+            # 🔹 1. If user uploaded image
+            if media:
+                upload_response = requests.post(
+                    f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
+                    headers={
+                        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                    },
+                    files={"file": media}
+                )
 
-#                         # print(media_url,'urlsssssssssssssssssssssssss')
-                        
-#                         # # Optionally update the template to store media_url
-#                         if template_obj:
-#                             template_obj.media_url = f"https://graph.facebook.com/v18.0/{media_url}"
-#                             template_obj.has_media = True
-#                             template_obj.save()
-#                     else:
-#                         return JsonResponse({"error": "Failed to upload media."}, status=500)
+                if upload_response.status_code == 200:
+                    media_id = upload_response.json().get("id")
+                    # Optionally save this new media ID for future
+                    if template_obj:
+                        template_obj.media_url = media_id
+                        template_obj.has_media = True
+                        template_obj.save()
+                else:
+                    return JsonResponse({"error": "Failed to upload media."}, status=500)
 
-#             # 2. Send to all numbers
-#             success, failed = [], []
+            # If no new media, use stored image from template (if exists)
+            elif template_obj and template_obj.has_media and template_obj.media_url:
+                media_id = template_obj.media_url  # This must be an actual media ID
+                print(media_id,'heloooooooooooooooooooooooo')
 
-#             for number in numbers:
-#                 number = number.strip()
+            # 2. Send to all numbers
+            success, failed = [], []
 
-#                 payload = {
-#                     "messaging_product": "whatsapp",
-#                     "recipient_type": "individual",
-#                     "to": number,
-#                     "type": "template",
-#                     "template": {
-#                         "name": template_name,
-#                         "language": {"code": "en"},
-#                         "components": []
-#                     }
-#                 }
+            for number in numbers:
+                number = number.strip()
 
-#                 # Add media
-#                 if media_url:
-#                     payload["template"]["components"].append({
-#                         "type": "header",
-#                         "parameters": [{
-#                             "type": "image",
-#                             "image": {"id": media_url}
-#                         }]
-#                     })
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": number,
+                    "type": "template",
+                    "template": {
+                        "name": template_name,
+                        "language": {"code": "en"},
+                        "components": []
+                    }
+                }
 
-#                 # Add variables
-#                 if variables:
-#                     body_params = [{"type": "text", "text": v} for v in variables]
-#                     payload["template"]["components"].append({
-#                     "type": "body",
-#                     "parameters": body_params
-#                 })
 
-#                 # Send API request
-#                 response = requests.post(
-#                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages",
+                # # Add media
+                if media_id:
+                    # uploaded via Meta, use ID
+                    header_image_component = {
+                        "type": "header",
+                        "parameters": [{
+                            "type": "image",
+                            "image": {"id": media_id} if not str(media_id).startswith("http") else {"link": media_id}
+                        }]
+                    }
+                    payload["template"]["components"].append(header_image_component)
 
-#                     headers={
-#                         "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
-#                         "Content-Type": "application/json"
-#                     },
-#                     json=payload
-#                 )
+                # Add variables
+                if variables:
+                    body_params = [{"type": "text", "text": v} for v in variables]
+                    payload["template"]["components"].append({
+                    "type": "body",
+                    "parameters": body_params
+                })
 
-#                 print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
-#                 print(response.text,'texttttttttttttttttt')
+                # Send API request
+                response = requests.post(
+                    f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages",
 
-#                 if response.status_code == 200:
-#                     success.append(number)
-#                 else:
-#                     failed.append({"number": number, "error": response.text})
+                    headers={
+                        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload
+                )
 
-#             return JsonResponse({"success": success, "failed": failed})
+                print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
+                print(response.text,'texttttttttttttttttt')
 
-#         except Exception as e:
-#             return JsonResponse({"error": str(e)}, status=500)
+                if response.status_code == 200:
+                    success.append(number)
+                else:
+                    failed.append({"number": number, "error": response.text})
+
+            return JsonResponse({"success": success, "failed": failed})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)

@@ -422,6 +422,15 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
 
 <!-- Scroll to bottom -->
 <script>
+
+  // Safely pass Django variables into JavaScript
+  const templateVariables = [
+    {% for i in your_template_variable_list %}
+      "{{ i.name }}",  // Directly pass Django variable values
+    {% endfor %}
+  ];
+
+
   const chatBox = document.getElementById("chatBox");
   if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -442,7 +451,6 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
 
   // Fetchning new messages in every 5 secs from a specific user 
   let lastMessageCount = 0;
-
   const userPhone = "{{ user_phone }}";
 
   function refreshMessages() {
@@ -565,8 +573,10 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
   }
 
 
-  {% comment %} template_messaage modal <!-- JS Logic to Load Categories/Templates Dynamically -->{% endcomment %}
+  {% comment %} template_message modal <!-- JS Logic to Load Categories/Templates Dynamically -->{% endcomment %}
 
+
+  // Load templates when a category is selected
   document.getElementById('categorySelect').addEventListener('change', function() {
     const categoryId = this.value;
     const templateDropdown = document.getElementById('templateSelect');
@@ -585,15 +595,14 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
           templateDropdown.appendChild(option);
         });
       });
-    
   });
 
+  // Load categories when modal opens
   document.getElementById('templateChatModal').addEventListener('show.bs.modal', function () {
-    
     const categoryDropdown = document.getElementById('categorySelect');
     const templateDropdown = document.getElementById('templateSelect');
     categoryDropdown.innerHTML = '<option selected disabled>Loading categories...</option>';
-  
+    
     fetch('/whatsapp/message_categories/')  // make sure this endpoint returns your categories
       .then(res => res.json())
       .then(data => {
@@ -607,6 +616,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       });
   });
 
+  // Load preview and variables when a template is selected
   document.getElementById('templateSelect').addEventListener('change', function () {
     const templateId = this.options[this.selectedIndex].getAttribute('data-id');
     const previewArea = document.getElementById('templatePreview');
@@ -622,11 +632,10 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
         previewHTML += `<b>Message</b>:<br><br>`;
   
         if (data.has_media && data.media_url) {
-          previewHTML += `<img src="${data.media_url}" style="max-width:100%; height:auto;" /><br><br>`;
+          previewHTML += `<img src="${data.media_url}" style="max-width:50%; height:auto;" /><br><br>`;
         }
   
         previewHTML += `<pre style="white-space: pre-wrap;">${data.description}</pre>`;
-  
         previewArea.innerHTML = previewHTML;
 
 
@@ -634,12 +643,35 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
         for (let i = 0; i < data.variable_count; i++) {
           const inputGroup = document.createElement('div');
           inputGroup.classList.add('col-md-6', 'mb-2');
+
+          const inputId = `variable_${i}`;
           inputGroup.innerHTML = `
             <label class="form-label">Variable ${i + 1}</label>
-            <input type="text" class="form-control template-variable" name="variable_${i}" placeholder="Enter value">
+            <input type="text" class="form-control template-variable" id="${inputId}" name="${inputId}" placeholder="Enter value">
           `;
           variableContainer.appendChild(inputGroup);
         }
+        
+        // Add input listener to update preview live
+        document.querySelectorAll('.template-variable').forEach((input, index) => {
+          input.addEventListener('input', () => {
+            let updatedMessage = data.description;
+
+            const values = Array.from(document.querySelectorAll('.template-variable')).map(i => {
+              const namePart = i.name.split('_')[1];  // Pure JavaScript string manipulation
+              return i.value || `${namePart}`;   // Use only Django's template syntax where needed
+            });
+
+            values.forEach((val, idx) => {
+              updatedMessage = updatedMessage.replaceAll(`${idx + 1}`, val);  // Replace placeholders in message
+            });
+
+            const previewElement = document.getElementById('livePreviewText');
+            if (previewElement) {
+              previewElement.textContent = updatedMessage;
+            }
+          });
+        });
 
       })
       .catch(err => {
@@ -647,6 +679,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       });
   });
 
+  // Submit form
   document.getElementById('templateChatForm').addEventListener('submit', function(e) {
     e.preventDefault(); // Prevent default form submission
   
@@ -688,13 +721,12 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     .then(data => {
       document.getElementById('sendingStatus').value = "✅ Message sent successfully!";
     })
+
     .catch(err => {
       console.error(err);
       document.getElementById('sendingStatus').value = "❌ Error sending message.";
     });
   });
-  
-  
   
 </script>
 
