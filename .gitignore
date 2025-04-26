@@ -19,7 +19,7 @@ venv.bak/
 # Django
 db.sqlite3
 *.log
-# media/
+media/
 staticfiles/
 *.pyc
 debug.log
