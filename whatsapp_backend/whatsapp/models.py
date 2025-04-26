@@ -48,7 +48,7 @@ class whatsappUsers(AbstractDateFieldMix):
     agent_id = models.IntegerField(default=0)
     timestamps = models.IntegerField(blank=True,null=True)
     msgstatus = models.IntegerField(default=0)
-    lead_status = models.ForeignKey("dashboard.Lead",on_delete=models.SET_NULL,null=True,blank=True,default='Fresh lead')
+    lead_status = models.ForeignKey("dashboard.Lead",on_delete=models.SET_NULL,null=True,blank=True,default=1)
 
     class Meta:
         db_table = 'db_wa_users'

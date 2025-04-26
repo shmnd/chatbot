@@ -226,7 +226,7 @@ def category_users_view(request, category_id):
 
 def lead_list_create_view(request):
     if request.method == "POST":
-        name = request.POST.get("lead_name",'Fresh lead')
+        name = request.POST.get("lead_name")
         if name:
             Lead.objects.create(lead_name=name)
         return redirect("home:lead_module")  # name of your url
