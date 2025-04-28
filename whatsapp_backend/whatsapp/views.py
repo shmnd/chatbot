@@ -692,7 +692,7 @@ class SendWhatsAppTemplateView(View):
             # If no new media, use stored image from template (if exists)
             elif template_obj and template_obj.has_media and template_obj.media_url:
                 media_id = template_obj.media_url  # This must be an actual media ID
-                print(media_id,'heloooooooooooooooooooooooo')
+                #print(media_id,'heloooooooooooooooooooooooo')
 
             # 2. Send to all numbers
             success, failed = [], []
@@ -727,11 +727,40 @@ class SendWhatsAppTemplateView(View):
 
                 # Add variables
                 if variables:
-                    body_params = [{"type": "text", "text": v} for v in variables]
-                    payload["template"]["components"].append({
-                    "type": "body",
-                    "parameters": body_params
-                })
+                     # Ensure variables is always a list, even if empty
+                    if not isinstance(variables, list):
+                        variables = []
+
+                    # Convert all variables to strings and validate
+                    validated_vars = []
+                    for var in variables:
+                        try:
+                            # Convert to string and ensure it's not empty
+                            str_var = str(var).strip()
+                            if str_var:
+                                validated_vars.append(str_var)
+                        except:
+                            continue  # Skip invalid variables
+
+                    
+                    # Only add body component if we have valid variables
+                    if validated_vars:
+                        body_component = {
+                            "type": "body",
+                            "parameters": [
+                                {
+                                    "type": "text",
+                                    "text": var_text
+                                } for var_text in validated_vars
+                            ]
+                        }
+
+                        # Initialize components if not exists
+                        if "components" not in payload["template"]:
+                            payload["template"]["components"] = []
+                        
+                        payload["template"]["components"].append(body_component)
+
 
                 # Send API request
                 response = requests.post(
@@ -744,8 +773,8 @@ class SendWhatsAppTemplateView(View):
                     json=payload
                 )
 
-                print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
-                print(response.text,'texttttttttttttttttt')
+                # print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
+                # print(response.text,'texttttttttttttttttt')
 
                 if response.status_code == 200:
                     success.append(number)

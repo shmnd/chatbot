@@ -152,7 +152,21 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
   }
 }
   
+.variable-group {
+  display: inline-block;
+  margin: 0 5px;
+}
 
+.variable-input {
+  border: 1px dashed #aaa;
+  background: #f8f9fa;
+  min-width: 150px;
+  display: inline !important;
+}
+
+.message-part {
+  white-space: pre-wrap;
+}
 </style>
 
 <div class="d-flex flex-column" style="height: 100vh; overflow: hidden;">
@@ -636,48 +650,62 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
         if (data.has_media && data.media_url) {
           previewHTML += `<img src="${data.media_url}" style="max-width:50%; height:auto;" /><br><br>`;
         }
-  
-        previewHTML += `<pre style="white-space: pre-wrap;">${data.description}</pre>`;
+
+        // Store the original message for variable replacement
+        const originalMessage = data.description;
+        previewHTML += '<div class="message-container" style="white-space: pre-wrap;">';
+
+        // Split message by variables and insert input boxes
+        const parts = originalMessage.split(/(\{\{\d+\}\})/);
+        
+        parts.forEach(part => {
+          if (part.match(/\{\{\d+\}\}/)) {
+            const varNum = part.match(/\d+/)[0];
+            previewHTML += `
+              <input type="text" 
+                     class="form-control-sm variable-input" 
+                     data-varname="${part}"
+                     placeholder="Enter ${part}"
+                     style="display: inline-block; width: 120px; margin: 0 5px;">
+            `;
+          } else {
+            previewHTML += part;
+          }
+        });
+
+        previewHTML += '</div>';
         previewArea.innerHTML = previewHTML;
 
-
-        // Generate variable fields
-        for (let i = 0; i < data.variable_count; i++) {
-          const inputGroup = document.createElement('div');
-          inputGroup.classList.add('col-md-6', 'mb-2');
-
-          const inputId = `variable_${i}`;
-          inputGroup.innerHTML = `
-            <label class="form-label">Variable ${i + 1}</label>
-            <input type="text" class="form-control template-variable" id="${inputId}" name="${inputId}" placeholder="Enter value">
-          `;
-          variableContainer.appendChild(inputGroup);
-        }
-        
-        // Add input listener to update preview live
-        document.querySelectorAll('.template-variable').forEach((input, index) => {
-          input.addEventListener('input', () => {
-            let updatedMessage = data.description;
-
-            const values = Array.from(document.querySelectorAll('.template-variable')).map(i => {
-              const namePart = i.name.split('_')[1];  // Pure JavaScript string manipulation
-              return i.value || `${namePart}`;   // Use only Django's template syntax where needed
-            });
-
-            values.forEach((val, idx) => {
-              updatedMessage = updatedMessage.replaceAll(`${idx + 1}`, val);  // Replace placeholders in message
-            });
-
-            const previewElement = document.getElementById('livePreviewText');
-            if (previewElement) {
-              previewElement.textContent = updatedMessage;
-            }
+        // Add live preview functionality
+        document.querySelectorAll('.variable-input').forEach(input => {
+          input.addEventListener('input', function() {
+            // You can add live preview updates here if needed
           });
         });
 
+        // Also create the variable inputs in the variableContainer if needed
+        const variables = [...new Set(originalMessage.match(/\{\{\d+\}\}/g) || [])];
+        variables.forEach(varName => {
+          const varNum = varName.match(/\d+/)[0];
+          const inputGroup = document.createElement('div');
+          inputGroup.classList.add('col-md-6', 'mb-2');
+          inputGroup.innerHTML = `
+            <label class="form-label">${varName}</label>
+            <input type="text" 
+                  class="form-control template-variable" 
+                  data-varname="${varName}" 
+                  placeholder="Enter value for ${varName}">
+          `;
+          variableContainer.appendChild(inputGroup);
+          
+          // Sync both input fields
+          inputGroup.querySelector('input').addEventListener('input', function() {
+            document.querySelector(`.variable-input[data-varname="${varName}"]`).value = this.value;
+          });
+        });
       })
       .catch(err => {
-        previewArea.innerHTML = `<span style="color:red;">Failed to load preview.</span>`;
+        previewArea.innerHTML = `<span style="color:red;">Failed to load preview: ${err.message}</span>`;
       });
   });
 
@@ -730,6 +758,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     });
   });
 
+  // LINE BREAKING JS (NOT WORKING )
   document.getElementById('messageInput').addEventListener('keydown', function(event) {
       if (event.key === 'Enter' && !event.shiftKey) {
           event.preventDefault();  // Prevent form submission (Enter key press)
