@@ -615,9 +615,7 @@ class GetTemplatePreview(View):
                 "has_media": bool(image_url),
                 "media_type": "image" if image_url else "",
                 "media_url": image_url,
-                "description": body_text or "No message available",
-                "status": template.status
-                
+                "description": body_text or "No message available"
             })
 
         except WhatsAppTemplate.DoesNotExist:

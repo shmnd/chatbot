@@ -645,7 +645,6 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
       .then(res => res.json())
       .then(data => {
         let previewHTML = `<b>Template Name</b>: ${data.template_name}<br><br>`;
-        previewHTML = `<b>Template Status</b>: ${data.status}<br><br>`;
         previewHTML += `<b>Message</b>:<br><br>`;
   
         if (data.has_media && data.media_url) {
