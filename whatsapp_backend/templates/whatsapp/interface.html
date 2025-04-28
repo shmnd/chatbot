@@ -644,6 +644,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     fetch(`/whatsapp/template_preview/${templateId}/`)
       .then(res => res.json())
       .then(data => {
+        let previewHTML = `<b>Template Status</b>: ${data.status}<br><br>`;
         let previewHTML = `<b>Template Name</b>: ${data.template_name}<br><br>`;
         previewHTML += `<b>Message</b>:<br><br>`;
   
