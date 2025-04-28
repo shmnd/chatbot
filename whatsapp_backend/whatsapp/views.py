@@ -673,11 +673,11 @@ class SendWhatsAppTemplateView(View):
             if media:
                 upload_response = requests.post(
                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
-                    headers={
-                        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
-                    },
+                    headers={   "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"},
                     files={"file": media}
                 )
+
+                print("Upload response:", upload_response.json())
 
                 if upload_response.status_code == 200:
                     media_id = upload_response.json().get("id")
@@ -687,7 +687,7 @@ class SendWhatsAppTemplateView(View):
                         template_obj.has_media = True
                         template_obj.save()
                 else:
-                    return JsonResponse({"error": "Failed to upload media."}, status=500)
+                    return JsonResponse({"error": "Failed to upload media(your new media)."}, status=500)
 
             # If no new media, use stored image from template (if exists)
             elif template_obj and template_obj.has_media and template_obj.media_url:
@@ -725,6 +725,8 @@ class SendWhatsAppTemplateView(View):
                     }
                     payload["template"]["components"].append(header_image_component)
 
+                    print("Payload with mediaa 111111111:", json.dumps(payload, indent=2))
+
                 # Add variables
                 if variables:
                      # Ensure variables is always a list, even if empty
@@ -761,6 +763,10 @@ class SendWhatsAppTemplateView(View):
                         
                         payload["template"]["components"].append(body_component)
 
+                        print("Payload with variables 111111111:", json.dumps(payload, indent=2))
+
+                print("Payload with variables 222222222:", json.dumps(payload, indent=2))
+
 
                 # Send API request
                 response = requests.post(
@@ -773,8 +779,8 @@ class SendWhatsAppTemplateView(View):
                     json=payload
                 )
 
-                # print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
-                # print(response.text,'texttttttttttttttttt')
+                print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
+                print(response.text,'texttttttttttttttttt')
 
                 if response.status_code == 200:
                     success.append(number)
