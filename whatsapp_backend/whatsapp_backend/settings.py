@@ -169,3 +169,23 @@ WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER")
 WHATSAPP_BUSINESS_ID = os.getenv('WHATSAPP_BUSINESS_ID')
+
+# logging in server 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/path/to/your/django/logs/debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
