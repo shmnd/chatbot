@@ -628,7 +628,7 @@ class SendWhatsAppTemplateView(View):
     def get(self, request):
         try:
             categories = Categories.objects.all()
-            url = 'https://graph.facebook.com/v18.0/{{WHATSAPP_BUSINESS_ID}}/message_templates'
+            url = f'https://graph.facebook.com/v18.0/{settings.WHATSAPP_BUSINESS_ID}/message_templates'
 
             headers={
                 "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
@@ -671,13 +671,17 @@ class SendWhatsAppTemplateView(View):
 
             # 🔹 1. If user uploaded image
             if media:
+                # print('new mediaaaaaaaaaaaaaaaa')
+                mime_type = media.content_type 
                 upload_response = requests.post(
                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
                     headers={   "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"},
-                    files={"file": media}
+                    files={"file": (media.name, media, mime_type)}, 
+                    data={"messaging_product": "whatsapp"}
                 )
-
-                print("Upload response:", upload_response.json())
+                # print("Uploaded filename:", media.name)
+                # print("Detected MIME type:", media.content_type)
+                #print("Upload response:", upload_response.json())
 
                 if upload_response.status_code == 200:
                     media_id = upload_response.json().get("id")
@@ -725,7 +729,7 @@ class SendWhatsAppTemplateView(View):
                     }
                     payload["template"]["components"].append(header_image_component)
 
-                    print("Payload with mediaa 111111111:", json.dumps(payload, indent=2))
+                    #print("Payload with mediaa 111111111:", json.dumps(payload, indent=2))
 
                 # Add variables
                 if variables:
@@ -763,9 +767,9 @@ class SendWhatsAppTemplateView(View):
                         
                         payload["template"]["components"].append(body_component)
 
-                        print("Payload with variables 111111111:", json.dumps(payload, indent=2))
+                        #print("Payload with variables 111111111:", json.dumps(payload, indent=2))
 
-                print("Payload with variables 222222222:", json.dumps(payload, indent=2))
+                #print("Payload with variables 222222222:", json.dumps(payload, indent=2))
 
 
                 # Send API request
@@ -779,8 +783,8 @@ class SendWhatsAppTemplateView(View):
                     json=payload
                 )
 
-                print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
-                print(response.text,'texttttttttttttttttt')
+                #print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
+                #print(response.text,'texttttttttttttttttt')
 
                 if response.status_code == 200:
                     success.append(number)
