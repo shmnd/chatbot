@@ -390,7 +390,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
                   {% else %}
                     {{ message.clean_body|linebreaksbr|safe }}
                   {% endif %}
-                  <div class="timestamp">Time: {{ message.timestamp }} — 
+                  <div class="timestamp">Time: {{ message.local_date_time }} — 
                     {% if message.msg_status == 1 %}sent{% elif message.msg_status == 2 %}delivered{% elif message.msg_status == 3 %}read{% else %}received{% endif %}
                   </div>
                 </div>
@@ -505,7 +505,7 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
   function formatMessageHTML(message) {
     let html = "";
     const fileUrl = message.file_url || "";
-    const timestamp = message.timestamp || "";
+    const timestamp = message.local_date_time || "";
 
     if (["image", "video", "audio", "document"].includes(message.msg_type)) {
       if (message.msg_type === "image") {

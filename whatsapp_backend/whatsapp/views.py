@@ -669,9 +669,8 @@ class SendWhatsAppTemplateView(View):
 
             template_obj = WhatsAppTemplate.objects.filter(template_name=template_name).first()
 
-            # 🔹 1. If user uploaded image
+            #1. If user uploaded image
             if media:
-                # print('new mediaaaaaaaaaaaaaaaa')
                 mime_type = media.content_type 
                 upload_response = requests.post(
                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
@@ -679,9 +678,6 @@ class SendWhatsAppTemplateView(View):
                     files={"file": (media.name, media, mime_type)}, 
                     data={"messaging_product": "whatsapp"}
                 )
-                # print("Uploaded filename:", media.name)
-                # print("Detected MIME type:", media.content_type)
-                #print("Upload response:", upload_response.json())
 
                 if upload_response.status_code == 200:
                     media_id = upload_response.json().get("id")
@@ -696,7 +692,6 @@ class SendWhatsAppTemplateView(View):
             # If no new media, use stored image from template (if exists)
             elif template_obj and template_obj.has_media and template_obj.media_url:
                 media_id = template_obj.media_url  # This must be an actual media ID
-                #print(media_id,'heloooooooooooooooooooooooo')
 
             # 2. Send to all numbers
             success, failed = [], []
@@ -716,8 +711,7 @@ class SendWhatsAppTemplateView(View):
                     }
                 }
 
-
-                # # Add media
+                # Add media
                 if media_id:
                     # uploaded via Meta, use ID
                     header_image_component = {
@@ -728,8 +722,6 @@ class SendWhatsAppTemplateView(View):
                         }]
                     }
                     payload["template"]["components"].append(header_image_component)
-
-                    #print("Payload with mediaa 111111111:", json.dumps(payload, indent=2))
 
                 # Add variables
                 if variables:
@@ -748,7 +740,6 @@ class SendWhatsAppTemplateView(View):
                         except:
                             continue  # Skip invalid variables
 
-                    
                     # Only add body component if we have valid variables
                     if validated_vars:
                         body_component = {
@@ -767,11 +758,6 @@ class SendWhatsAppTemplateView(View):
                         
                         payload["template"]["components"].append(body_component)
 
-                        #print("Payload with variables 111111111:", json.dumps(payload, indent=2))
-
-                #print("Payload with variables 222222222:", json.dumps(payload, indent=2))
-
-
                 # Send API request
                 response = requests.post(
                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages",
@@ -783,10 +769,37 @@ class SendWhatsAppTemplateView(View):
                     json=payload
                 )
 
-                #print(response.status_code,'statussssssssssssssssssssssssssssssssssss')
-                #print(response.text,'texttttttttttttttttt')
-
                 if response.status_code == 200:
+                    try:
+                        message_id = response.json()["messages"][0]["id"]
+                    except:
+                        message_id = None
+
+                    # Prepare readable version of the message
+                    var_string = ""
+                    timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+
+                    if variables:
+                        var_string = "\n".join([f"{{{i+1}}}: {v}" for i, v in enumerate(variables)])
+
+                    readable_message = f"🧩 Template: {template_name}\n{var_string}"
+
+                    WhatsAppMessage.objects.create(
+                        uid=request.user.id,
+                        id_phone=settings.PHONE_NUMBER_ID,
+                        ournum=settings.WHATSAPP_NUMBER,
+                        usernumber=number,
+                        msg_body=readable_message,
+                        msg_status=1,
+                        msg_type="template",
+                        temp_name=template_name,
+                        array_testing=json.dumps(variables),
+                        local_date_time=timestamp,
+                        status=1,
+                        is_read=False,
+                        send_id=message_id,
+                        msg_sent_by=request.user.id,
+                    )
                     success.append(number)
                 else:
                     failed.append({"number": number, "error": response.text})
