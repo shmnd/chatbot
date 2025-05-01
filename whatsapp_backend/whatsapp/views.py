@@ -666,21 +666,27 @@ class SendWhatsAppTemplateView(View):
 
             media = files.get("media")
             media_id = None
-            real_header_type = None
             mime_type = None
+            real_header_type = None
+            header_type = None
 
             template_obj = WhatsAppTemplate.objects.filter(template_name=template_name).first()
-            header_type = getattr(template_obj, "header_type", None)  # Safe access from DB
+            expected_header_type = getattr(template_obj, "header_type", None)  # Safe access from DB
 
+            # 1. Determine MIME and real header type if media is uploaded
             if media:
                 mime_type = media.content_type
                 real_header_type = guess_header_type(mime_type)
 
                 # Validate header type matches actual uploaded type
-                if header_type and header_type != real_header_type:
+                if media and expected_header_type and expected_header_type != real_header_type:
                     return JsonResponse({
-                        "error": f"Template expects a {header_type.upper()}, but uploaded file is a {real_header_type.upper()}."
+                        "error": f"Template expects a {expected_header_type.upper()}, but uploaded file is a {real_header_type.upper()}."
                     }, status=400)
+                    
+                header_type = real_header_type
+            else:
+                header_type = expected_header_type # fallback to template value if no media uploaded
 
             if media and template_obj:
                 # Save media locally
@@ -706,15 +712,15 @@ class SendWhatsAppTemplateView(View):
                 if upload_response.status_code == 200:
                     media_id = upload_response.json().get("id")
                     # Save info to template
-                    template_obj.media_url = media_id  # or public_url if you prefer storing the local one
+                    template_obj.media_url = media_id  
                     template_obj.has_media = True
-                    template_obj.header_type = header_type or "video"  # Default fallback
+                    template_obj.header_type = header_type
                     template_obj.media_type = header_type
                     template_obj.save()
                 else:
                     return JsonResponse({"error": "Failed to upload media to Meta."}, status=500)
 
-            # # If no new media, use stored image from template (if exists)
+            # If no new media, use stored image from template (if exists)
             elif template_obj and template_obj.has_media:
                 media_id = template_obj.media_url  # This must be an actual media ID
                 header_type = getattr(template_obj, "header_type", None)
@@ -771,7 +777,7 @@ class SendWhatsAppTemplateView(View):
                     payload["template"]["components"].append(body_component)
 
 
-                # Send API request
+                # Send the message
                 response = requests.post(
                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages",
                     headers = {
