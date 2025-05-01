@@ -678,6 +678,15 @@ class SendWhatsAppTemplateView(View):
                 mime_type = media.content_type
                 real_header_type = guess_header_type(mime_type)
 
+                print("🧾 DEBUG: --- Incoming Media Info ---")
+                print("📎 File Name:", media.name)
+                print("🧪 MIME Type:", mime_type)
+                print("📦 Guessed Header Type:", real_header_type)
+                print("📄 Template Expects:", expected_header_type)
+                print("📍 Final Header Type Used:", header_type)
+                print("📤 Uploading to Meta from path:", local_path if 'local_path' in locals() else "Not saved yet")
+
+
                 # Validate header type matches actual uploaded type
                 if media and expected_header_type and expected_header_type != real_header_type:
                     return JsonResponse({
@@ -719,6 +728,9 @@ class SendWhatsAppTemplateView(View):
                     template_obj.save()
                 else:
                     return JsonResponse({"error": "Failed to upload media to Meta."}, status=500)
+            
+                print("🧾 Meta upload response:", upload_response.status_code, upload_response.text)
+
 
             # If no new media, use stored image from template (if exists)
             elif template_obj and template_obj.has_media:
@@ -786,6 +798,10 @@ class SendWhatsAppTemplateView(View):
                     },
                     json=payload
                 )
+
+                print("📬 WhatsApp Send Payload:", json.dumps(payload, indent=2))
+                print("📬 WhatsApp Response:", response.status_code, response.text)
+
 
                 if response.status_code == 200:
                     success.append(number)
