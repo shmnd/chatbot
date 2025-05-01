@@ -665,10 +665,22 @@ class SendWhatsAppTemplateView(View):
                 return JsonResponse({"error": "Missing template or numbers"}, status=400)
 
             media = files.get("media")
-            mime_type = media.content_type 
-            media_id = None  # use only if uploading new media
+            media_id = None
+            real_header_type = None
+            mime_type = None
+
             template_obj = WhatsAppTemplate.objects.filter(template_name=template_name).first()
-            header_type = guess_header_type(mime_type)
+            header_type = getattr(template_obj, "header_type", None)  # Safe access from DB
+
+            if media:
+                mime_type = media.content_type
+                real_header_type = guess_header_type(mime_type)
+
+                # Validate header type matches actual uploaded type
+                if header_type and header_type != real_header_type:
+                    return JsonResponse({
+                        "error": f"Template expects a {header_type.upper()}, but uploaded file is a {real_header_type.upper()}."
+                    }, status=400)
 
             if media and template_obj:
                 # Save media locally
