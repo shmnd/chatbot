@@ -122,3 +122,14 @@ def sync_templates_from_meta():
                     "media_url": media_url,
                 }
             )
+
+
+
+def guess_header_type(mime_type):
+    if mime_type.startswith("image/"):
+        return "image"
+    elif mime_type.startswith("video/"):
+        return "video"
+    elif mime_type in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+        return "document"
+    return None

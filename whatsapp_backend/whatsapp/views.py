@@ -30,7 +30,7 @@ from django.utils.decorators import method_decorator
 # Local app imports
 from whatsapp.models import whatsappUsers, WhatsAppMessage,WhatsAppTemplate
 from whatsapp.service.whatsapp_api import fetch_contact
-from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView,sync_templates_from_meta
+from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView,sync_templates_from_meta,guess_header_type
 from dashboard.models import Lead,Categories
 # Create your views here.
 @method_decorator(csrf_exempt, name='dispatch')
@@ -655,8 +655,8 @@ class SendWhatsAppTemplateView(View):
         try:
             data = request.POST
             files = request.FILES
+            timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
-            category_id = data.get("category")
             template_name = data.get("template") or data.get("template_id") 
             numbers = data.get("numbers", "").split(",")
             variables = json.loads(data.get("variables", "[]")) 
@@ -665,37 +665,50 @@ class SendWhatsAppTemplateView(View):
                 return JsonResponse({"error": "Missing template or numbers"}, status=400)
 
             media = files.get("media")
+            mime_type = media.content_type 
             media_id = None  # use only if uploading new media
-
             template_obj = WhatsAppTemplate.objects.filter(template_name=template_name).first()
+            header_type = guess_header_type(mime_type)
 
-            #1. If user uploaded image
-            if media:
-                mime_type = media.content_type 
-                upload_response = requests.post(
-                    f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
-                    headers={   "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"},
-                    files={"file": (media.name, media, mime_type)}, 
-                    data={"messaging_product": "whatsapp"}
-                )
+            if media and template_obj:
+                # Save media locally
+                extension = mimetypes.guess_extension(mime_type) or ''
+                local_filename = f"{template_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}{extension}"
+
+                upload_dir = os.path.join(settings.MEDIA_ROOT, "uploads")
+                os.makedirs(upload_dir, exist_ok=True)
+                local_path = os.path.join(upload_dir, local_filename)
+
+                with open(local_path, 'wb') as f:
+                    f.write(media.read())
+
+                # Upload to Meta
+                with open(local_path, 'rb') as f:
+                    upload_response = requests.post(
+                        f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/media",
+                        headers={"Authorization": f"Bearer {settings.WHATSAPP_TOKEN}"},
+                        files={"file": (local_filename, f, mime_type)},
+                        data={"messaging_product": "whatsapp"}
+                    )
 
                 if upload_response.status_code == 200:
                     media_id = upload_response.json().get("id")
-                    # Optionally save this new media ID for future
-                    if template_obj:
-                        template_obj.media_url = media_id
-                        template_obj.has_media = True
-                        template_obj.save()
+                    # Save info to template
+                    template_obj.media_url = media_id  # or public_url if you prefer storing the local one
+                    template_obj.has_media = True
+                    template_obj.header_type = header_type or "video"  # Default fallback
+                    template_obj.media_type = header_type
+                    template_obj.save()
                 else:
-                    return JsonResponse({"error": "Failed to upload media(your new media)."}, status=500)
+                    return JsonResponse({"error": "Failed to upload media to Meta."}, status=500)
 
-            # If no new media, use stored image from template (if exists)
-            elif template_obj and template_obj.has_media and template_obj.media_url:
+            # # If no new media, use stored image from template (if exists)
+            elif template_obj and template_obj.has_media:
                 media_id = template_obj.media_url  # This must be an actual media ID
+                header_type = getattr(template_obj, "header_type", None)
 
             # 2. Send to all numbers
             success, failed = [], []
-
             for number in numbers:
                 number = number.strip()
 
@@ -711,58 +724,45 @@ class SendWhatsAppTemplateView(View):
                     }
                 }
 
-                # Add media
-                if media_id:
-                    # uploaded via Meta, use ID
-                    header_image_component = {
-                        "type": "header",
-                        "parameters": [{
-                            "type": "image",
-                            "image": {"id": media_id} if not str(media_id).startswith("http") else {"link": media_id}
-                        }]
-                    }
-                    payload["template"]["components"].append(header_image_component)
+                # Attach header media
+                if media_id and header_type in ["image", "video", "document"]:
+                    if header_type == "document":
+                        header_component = {
+                            "type": "header",
+                            "parameters": [{
+                                "type": "document",
+                                "document": {
+                                    "id": media_id,
+                                    "filename": local_filename  # required for document type
+                                }
+                            }]
+                        }
+                    else:
+                        header_component = {
+                            "type": "header",
+                            "parameters": [{
+                                "type": header_type,
+                                header_type: {
+                                    "id": media_id
+                                }
+                            }]
+                        }
+
+                    payload["template"]["components"].append(header_component)
 
                 # Add variables
                 if variables:
-                     # Ensure variables is always a list, even if empty
-                    if not isinstance(variables, list):
-                        variables = []
+                    body_component = {
+                        "type": "body",
+                        "parameters": [{"type": "text", "text": str(var)} for var in variables]
+                    }
+                    payload["template"]["components"].append(body_component)
 
-                    # Convert all variables to strings and validate
-                    validated_vars = []
-                    for var in variables:
-                        try:
-                            # Convert to string and ensure it's not empty
-                            str_var = str(var).strip()
-                            if str_var:
-                                validated_vars.append(str_var)
-                        except:
-                            continue  # Skip invalid variables
-
-                    # Only add body component if we have valid variables
-                    if validated_vars:
-                        body_component = {
-                            "type": "body",
-                            "parameters": [
-                                {
-                                    "type": "text",
-                                    "text": var_text
-                                } for var_text in validated_vars
-                            ]
-                        }
-
-                        # Initialize components if not exists
-                        if "components" not in payload["template"]:
-                            payload["template"]["components"] = []
-                        
-                        payload["template"]["components"].append(body_component)
 
                 # Send API request
                 response = requests.post(
                     f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER_ID}/messages",
-
-                    headers={
+                    headers = {
                         "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
                         "Content-Type": "application/json"
                     },
@@ -770,41 +770,31 @@ class SendWhatsAppTemplateView(View):
                 )
 
                 if response.status_code == 200:
-                    try:
-                        message_id = response.json()["messages"][0]["id"]
-                    except:
-                        message_id = None
-
-                    # Prepare readable version of the message
-                    var_string = ""
-                    timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-
-                    if variables:
-                        var_string = "\n".join([f"{{{i+1}}}: {v}" for i, v in enumerate(variables)])
-
-                    readable_message = f"🧩 Template: {template_name}\n{var_string}"
-
+                    success.append(number)
                     WhatsAppMessage.objects.create(
-                        uid=request.user.id,
-                        id_phone=settings.PHONE_NUMBER_ID,
-                        ournum=settings.WHATSAPP_NUMBER,
                         usernumber=number,
-                        msg_body=readable_message,
+                        id_phone=settings.WHATSAPP_NUMBER,
+                        temp_name=f"Template name: {template_name}",
+                        msg_body=f"Template body: {template_name}",
                         msg_status=1,
                         msg_type="template",
-                        temp_name=template_name,
-                        array_testing=json.dumps(variables),
-                        local_date_time=timestamp,
+                        mime_type=mime_type if media else "",
                         status=1,
-                        is_read=False,
-                        send_id=message_id,
-                        msg_sent_by=request.user.id,
+                        local_date_time=timestamp,
+                        created_date=now(),
+                        modified_date=now(),
+                        msg_sent_by="1",
                     )
-                    success.append(number)
                 else:
                     failed.append({"number": number, "error": response.text})
+                    print(f"❌ Failed to send to {number}:", response.text)
 
-            return JsonResponse({"success": success, "failed": failed})
+            return JsonResponse({
+                "success": success,
+                "failed": failed,
+                "message": f"Sent to {len(success)} numbers, failed for {len(failed)}."
+            }, status=200)
 
         except Exception as e:
+            print('nooooooooooooo❌ Exception:', str(e))
             return JsonResponse({"error": str(e)}, status=500)

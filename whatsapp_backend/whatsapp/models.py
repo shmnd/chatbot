@@ -64,6 +64,7 @@ class WhatsAppTemplate(AbstractDateFieldMix):
     media_url = models.URLField(max_length=10000,blank=True, null=True)
     variable_count = models.IntegerField(default=0,null=True,blank=True)
     description = models.TextField(blank=True, null=True)
+    header_type = models.CharField(max_length=50, blank=True, null=True) 
 
 
     def __str__(self):
