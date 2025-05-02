@@ -178,10 +178,19 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     "lead_name": lead_name
                 })
 
+        # chat_users = sorted(
+        #     chat_users,
+        #     key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+        #     if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
+        #     reverse=True
+        # )
+
         chat_users = sorted(
             chat_users,
-            key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
-            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
+            key=lambda user: (
+                WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date 
+                if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date
+            ),
             reverse=True
         )
 
