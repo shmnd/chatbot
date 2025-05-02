@@ -678,15 +678,15 @@ class SendWhatsAppTemplateView(View):
             expected_header_type = getattr(template_obj, "header_type", None)  # Safe access from DB
 
             # 1. Determine MIME and real header type if media is uploaded
-            print(template_obj,'helooooooooooooooooooooooo')
+            # print(template_obj,'helooooooooooooooooooooooo')
             if media:
                 mime_type = media.content_type
 
                 if not mime_type:
-                    print('')
+                    # print('///////////////////////////////////////////')
                     mime_type, _ = mimetypes.guess_type(media.name)
 
-                print(mime_type,'mime typeeeeeeeeeeee')
+                # print(mime_type,'mime typeeeeeeeeeeee')
                     
                 real_header_type = guess_header_type(mime_type)
 
