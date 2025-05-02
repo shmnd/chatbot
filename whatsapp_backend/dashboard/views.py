@@ -145,7 +145,7 @@ def category_list_create_view(request):
     for category in categories:
         category.template_ids = ",".join(map(str, category.templates.values_list('id', flat=True)))
 
-    templates = WhatsAppTemplate.objects.filter(category__isnull=True) # only unassigned templates
+    templates = WhatsAppTemplate.objects.filter(category__isnull=True,template_status="APPROVED") # only unassigned templates
     
     return render(request, "dashboard/category.html", {"categories": categories,"templates": templates})
 

@@ -582,7 +582,7 @@ class FetchTemplatesByCategoryView(View):
     def get(self, request, category_id):
         try:
             sync_templates_from_meta()
-            templates = WhatsAppTemplate.objects.filter(category_id=category_id)
+            templates = WhatsAppTemplate.objects.filter(category_id=category_id,template_status="APPROVED")
             data = [{"id": t.id, "name": t.template_name} for t in templates]  # template_name should match Meta name
             return JsonResponse({"templates": data})
         except Exception as e:
