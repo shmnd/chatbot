@@ -606,10 +606,8 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
           const option = document.createElement('option');
           // option.value = template.id;
           option.value = template.name;
-          // option.text = template.name;
-          option.text = `${template.name} (${template.header_type})`;
+          option.text = template.name;
           option.setAttribute('data-id', template.id); 
-          option.setAttribute('data-header-type', template.header_type); 
           templateDropdown.appendChild(option);
         });
       });
@@ -640,11 +638,6 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     const previewArea = document.getElementById('templatePreview');
     const variableContainer = document.getElementById('variableInputs');
 
-    const selectedOption = this.options[this.selectedIndex];
-    const headerType = selectedOption.getAttribute('data-header-type');
-    const mediaInput = document.getElementById('mediaFile');
-    console.log(selectedOption,headerType,mediaInput,'helooooooooooooo')
-  
     previewArea.innerHTML = 'Loading preview...';
     variableContainer.innerHTML = ''; // Clear previous
   
@@ -739,21 +732,6 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     if (mediaFile) {
       formData.append('media', mediaFile);
     }
-
-    const selectedHeaderType = document.querySelector('#templateSelect option:checked').getAttribute('data-header-type');
-    if (mediaFile && selectedHeaderType) {
-      const fileType = mediaFile.type;
-      const mismatch =
-        (selectedHeaderType === 'image' && !fileType.startsWith('image/')) ||
-        (selectedHeaderType === 'video' && !fileType.startsWith('video/')) ||
-        (selectedHeaderType === 'document' && !(fileType === 'application/pdf' || fileType.includes('word') || fileType.includes('presentation')));
-
-      if (mismatch) {
-        document.getElementById('sendingStatus').value = `❌ Uploaded file type doesn't match required ${selectedHeaderType.toUpperCase()} for this template.`;
-        return;
-      }
-    }
-
   
     fetch('/whatsapp/send_template_message/', {
       method: 'POST',
