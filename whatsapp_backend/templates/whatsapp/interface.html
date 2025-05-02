@@ -759,21 +759,6 @@ body[data-kt-app-sidebar-minimize="on"] .contact-header {
     });
   });
 
-  // LINE BREAKING JS (NOT WORKING )
-  document.getElementById('messageInput').addEventListener('keydown', function(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault();  // Prevent form submission (Enter key press)
-          sendMessage();  // Your function to send the message
-      }
-      else if (event.key === 'Enter' && event.shiftKey) {
-          // Allow line break if Shift + Enter is pressed
-          const input = event.target;
-          const cursorPosition = input.selectionStart;
-          const message = input.value;
-          input.value = message.slice(0, cursorPosition) + '\n' + message.slice(cursorPosition);
-          input.selectionStart = input.selectionEnd = cursorPosition + 1;
-      }
-  });
 
   // prevent enter form submission
   document.querySelector('textarea[name="message"]').addEventListener('keypress', function(e) {
