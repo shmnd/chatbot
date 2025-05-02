@@ -11,6 +11,7 @@ from django.db.models import Max
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import Lower, Trim
 from django.db.models import Q
+from whatsapp.helpers.utils import sync_templates_from_meta
 # Create your views here.
 
 
@@ -284,3 +285,22 @@ def lead_users_view(request, lead_id):
         "lead": lead,
         "users": users
     })
+
+
+'''-------------------------------------------------------------------- TEMPLATE ----------------------------------------------------------------'''
+
+def template_list_create_view(request):
+    templates = WhatsAppTemplate.objects.all()
+     # Add pagination
+    paginator = Paginator(templates, 10)  # Show 10 users per page
+    page_number = request.GET.get("page")
+    page = paginator.get_page(page_number)
+    return render(request, "dashboard/template.html", {"templates": templates,"page":page})
+
+
+@csrf_exempt
+def sync_templates_api(request):
+    if request.method == "POST":
+        sync_templates_from_meta()
+        return JsonResponse({"message": "✅ Templates synced successfully"})
+    return JsonResponse({"error": "Only POST allowed"}, status=405)

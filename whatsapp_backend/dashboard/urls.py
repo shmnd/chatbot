@@ -20,6 +20,12 @@ urlpatterns = [
     path("lead/update/<int:pk>/", views.update_lead, name="update_lead"),
     path('lead/<int:lead_id>/users/', views.lead_users_view, name='lead_users'),
 
+    # template
+    path("template/", views.template_list_create_view, name="template_module"),
+    path("sync-templates/", views.sync_templates_api, name="sync_templates_api"),
+
+
+
 
 
 

@@ -98,15 +98,21 @@ def sync_templates_from_meta():
             header = next((c for c in components if c["type"] == "HEADER"), None)
             body = next((c for c in components if c["type"] == "BODY"), None)
 
+            # Determine header type
+            header_type = header.get("format", "").lower() if header else None
+
             # Extract media if present
             media_url = None
             media_type = None
-            if header and header.get("format") == "IMAGE":
+            if header_type in ["image", "video", "document"]:
                 header_example = header.get("example", {})
                 handles = header_example.get("header_handle", [])
                 if handles:
                     media_url = handles[0]
-                    media_type = "image"
+                    media_type = header_type
+                
+            # Template status from Meta (e.g. APPROVED, PENDING, REJECTED)
+            template_status = tpl.get("status", "UNKNOWN")
 
             # Store the full components JSON in the description
             description_json = json.dumps({"components": components})
@@ -117,9 +123,11 @@ def sync_templates_from_meta():
                     "language": tpl.get("language") or "en_US",
                     "description": description_json,
                     "variable_count": len(body.get("parameters", [])) if body and "parameters" in body else 0,
+                    "header_type": header_type,
                     "has_media": bool(media_url),
                     "media_type": media_type,
                     "media_url": media_url,
+                    "template_status": template_status,
                 }
             )
 

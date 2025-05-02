@@ -1,0 +1,157 @@
+{% extends 'layouts/apps.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-left: 1rem;
+  }
+
+  .lead-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 30px 0 15px;
+    padding-left: 10px;
+  }
+
+  .lead-header h2 {
+    font-weight: bold;
+    color: #000;
+    margin: 0;
+  }
+
+  .table-container {
+    padding-left: 10px;
+  }
+
+  .table {
+    border: 1px solid #dee2e6;
+    width: 100%;
+  }
+
+  .table th, .table td {
+    vertical-align: middle;
+    text-align: left;
+    border: 1px solid #dee2e6;
+    padding: 12px 16px;
+  }
+  
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+
+  .btn-action-group {
+    display: flex;
+    gap: 6px;
+  }
+
+  .modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .modal-title {
+    font-weight: 600;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #dee2e6;
+  }
+
+  .no-data {
+    font-style: italic;
+    color: #888;
+    text-align: center;
+  }
+
+</style>
+
+<div class="container mt-5" style="max-width: 850px;">
+  <div class="card shadow-sm border">
+    <div class="card-body">
+
+      <button id="refreshTemplatesBtn" class="btn btn-primary mb-3">
+        🔄 Refresh Templates
+      </button>
+
+      <table class="table table-bordered table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-dark fw-semibold" style="width: 35%;">Template Name</th>
+            <th class="text-dark fw-semibold" style="width: 30%;">Header</th>
+            <th class="text-dark fw-semibold" style="width: 30%;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for template in page %}
+          <tr>
+            <td class="ps-3">{{ template.template_name }}</td>
+            <td class="ps-3">{{ template.header_type }}</td>
+            <td class="ps-3">{{ template.template_status }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="text-center text-muted">No Template available.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if page.paginator.num_pages > 1 %}
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center mt-4">
+    {% if page.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page.previous_page_number }}">Back</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">Back</span></li>
+    {% endif %}
+
+    {% for num in page.paginator.page_range %}
+    <li class="page-item {% if page.number == num %}active{% endif %}">
+      <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+    </li>
+    {% endfor %}
+
+    {% if page.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page.next_page_number }}">Next</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">Next</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+<script>
+  document.getElementById("refreshTemplatesBtn").addEventListener("click", function () {
+    fetch("{% url 'home:sync_templates_api' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}"
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message || "✅ Refreshed successfully!");
+      location.reload();  // Reload to fetch updated template list
+    })
+    .catch(err => {
+      alert("❌ Failed to sync templates.");
+      console.error(err);
+    });
+  });
+</script>
+
+{% endblock content %}
