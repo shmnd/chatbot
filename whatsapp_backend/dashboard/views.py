@@ -12,6 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import Lower, Trim
 from django.db.models import Q
 from whatsapp.helpers.utils import sync_templates_from_meta
+from django.http import FileResponse, Http404
+import os
+from django.conf import settings
 # Create your views here.
 
 
@@ -304,3 +307,13 @@ def sync_templates_api(request):
         sync_templates_from_meta()
         return JsonResponse({"message": "✅ Templates synced successfully"})
     return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+
+'''-------------------------------------------------------------------- DOCUMENT ----------------------------------------------------------------'''
+
+def open_document(request):
+    file_path = os.path.join(settings.BASE_DIR, 'static', 'docs', 'chatapp_report.pdf')
+    try:
+        return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+    except FileNotFoundError:
+        raise Http404("Documentation not found.")

@@ -24,6 +24,9 @@ urlpatterns = [
     path("template/", views.template_list_create_view, name="template_module"),
     path("sync-templates/", views.sync_templates_api, name="sync_templates_api"),
 
+    # documentation
+    path("documentation/", views.open_document, name="documentation"),
+
 
 
 
