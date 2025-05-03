@@ -32,6 +32,7 @@ from whatsapp.models import whatsappUsers, WhatsAppMessage,WhatsAppTemplate
 from whatsapp.service.whatsapp_api import fetch_contact
 from whatsapp.helpers.utils import extract_file_url_from_msg_body,handle_new_message,SendMessageWebhookView,sync_templates_from_meta,guess_header_type
 from dashboard.models import Lead,Categories
+from django.db.models import OuterRef, Subquery, Max, F, Q, Case, When
 # Create your views here.
 @method_decorator(csrf_exempt, name='dispatch')
 class WhatsAppWebhookView(View):
@@ -151,18 +152,33 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
 
         # Get messages if phone is identified
         if phone:
+            # Prefetch user data for all messages at once
             messages_qs = WhatsAppMessage.objects.filter(Q(usernumber=phone) | Q(id_phone=phone)).order_by("msg_id")
+
+            # Get all unique user numbers from the messages
+            user_numbers = set(messages_qs.values_list('usernumber', flat=True))
+
+            # Create a dictionary mapping user numbers to their lead status
+            user_lead_map = {}
+            for user in whatsappUsers.objects.filter(user_num__in = user_numbers).select_related('lead_status'):
+                lead_name = user.lead_status.lead_name if  user.lead_status else "None"
+                user_lead_map[user.user_num] = lead_name
+
+            # Process messages using the pre-fetched data
             for m in messages_qs:
                 soup = BeautifulSoup(m.msg_body or "", "html.parser")
                 clean_body = soup.text.split("Time:")[0].strip()
                 timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
-                try:
-                    user = whatsappUsers.objects.get(user_num=m.usernumber)
-                    lead = user.lead_status  # this is the ForeignKey object
-                    lead_name = lead.lead_name if lead else "None"
-                except whatsappUsers.DoesNotExist:
-                    lead_name = "None"
+                # Use the mapping instead of querying for each message
+                lead_name = user_lead_map.get(m.usernumber,"None")
+
+                # try:
+                #     user = whatsappUsers.objects.get(user_num=m.usernumber)
+                #     lead = user.lead_status  # this is the ForeignKey object
+                #     lead_name = lead.lead_name if lead else "None"
+                # except whatsappUsers.DoesNotExist:
+                #     lead_name = "None"
 
                 messages.append({
                     "msg_body": m.msg_body,
@@ -180,19 +196,26 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
 
         # chat_users = sorted(
         #     chat_users,
-        #     key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
-        #     if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
+        #     key=lambda user: (
+        #         WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date 
+        #         if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date
+        #     ),
         #     reverse=True
         # )
 
-        chat_users = sorted(
-            chat_users,
-            key=lambda user: (
-                WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date 
-                if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date
-            ),
-            reverse=True
-        )
+        lastest_message_subquery = WhatsAppMessage.objects.filter(
+            usernumber = OuterRef('user_num')
+        ).order_by('-msg_id').values('created_date')[:1]
+
+        chat_users = chat_users.annotate(
+            latest_activity=Case(
+                When(
+                    user_num__in=WhatsAppMessage.objects.values('usernumber').distinct(),
+                    then = Subquery(lastest_message_subquery)
+                ),
+                default=F('created_date')
+            )
+        ).order_by('-latest_activity')
 
         return render(request, "whatsapp/interface.html", {
             "messages": messages,
@@ -526,19 +549,44 @@ class FetchMessagesAPI(View):
 
 class FetchChatUsersView(View):
     def get(self, request):
-        users = sorted(
-            whatsappUsers.objects.all(),
-            key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
-            if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
-            reverse=True
-        )
+
+        # Create a subquery to get the latest message date for each user
+        lastest_message_dates = WhatsAppMessage.objects.filter(
+            usernumber = OuterRef('user_num')
+        ).order_by('-created_date').values('created_date')[:1]
+
+        # Create a subquery to get the latest message body for each user
+        latest_message_body_subquery = WhatsAppMessage.objects.filter(
+            usernumber=OuterRef('user_num')
+        ).order_by('-msg_id').values('msg_body')[:1]
+        
+        # Annotate users with their latest message date, falling back to user creation date
+        users = whatsappUsers.objects.annotate(
+            latest_activity = Case(
+                When(
+                    user_num__in = WhatsAppMessage.objects.values('usernumber').distinct(),
+                    then=Subquery(lastest_message_dates)
+                ),
+                default=F('created_date')
+            ),
+            last_message_body=Subquery(latest_message_body_subquery)
+
+        ).order_by('-latest_activity')
+
+
+        # users = sorted(
+        #     whatsappUsers.objects.all(),
+        #     key=lambda user: WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date
+        #     if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date,
+        #     reverse=True
+        # )
 
         user_data = []
         for user in users:
-            last_msg = WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first()
+            # last_msg = WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first()
             last_message = ""
-            if last_msg:
-                soup = BeautifulSoup(last_msg.msg_body or "", "html.parser")
+            if user.last_message_body:
+                soup = BeautifulSoup(user.last_message_body or "", "html.parser")
                 last_message = soup.text.strip()
 
             user_data.append({
