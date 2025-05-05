@@ -173,12 +173,6 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                 # Use the mapping instead of querying for each message
                 lead_name = user_lead_map.get(m.usernumber,"None")
 
-                # try:
-                #     user = whatsappUsers.objects.get(user_num=m.usernumber)
-                #     lead = user.lead_status  # this is the ForeignKey object
-                #     lead_name = lead.lead_name if lead else "None"
-                # except whatsappUsers.DoesNotExist:
-                #     lead_name = "None"
 
                 messages.append({
                     "msg_body": m.msg_body,
@@ -194,14 +188,6 @@ class WhatsappHomePageView(LoginRequiredMixin, View):
                     "lead_name": lead_name
                 })
 
-        # chat_users = sorted(
-        #     chat_users,
-        #     key=lambda user: (
-        #         WhatsAppMessage.objects.filter(usernumber=user.user_num).order_by("-msg_id").first().created_date 
-        #         if WhatsAppMessage.objects.filter(usernumber=user.user_num).exists() else user.created_date
-        #     ),
-        #     reverse=True
-        # )
 
         lastest_message_subquery = WhatsAppMessage.objects.filter(
             usernumber = OuterRef('user_num')
@@ -910,7 +896,7 @@ def get_sent_messages(request):
     if request.method == 'GET':
         # Filter only messages sent by you
         messages = WhatsAppMessage.objects.filter(
-            msg_sent_by=settings.PHONE_NUMBER_ID,      # Replace with your user ID or make dynamic
+            msg_sent_by=1,      # Replace with your user ID or make dynamic
         ).order_by('-created_date')[:100]
 
         data = []
@@ -934,6 +920,7 @@ def get_sent_messages(request):
                 'funnel_id': msg.funnel_id,
                 'is_read': msg.is_read
             })
+            print(data,'dataaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         return JsonResponse({'messages': data}, safe=False)
 
     return JsonResponse({'error': 'Only GET method allowed'}, status=405)
