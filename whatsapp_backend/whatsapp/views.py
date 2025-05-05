@@ -698,7 +698,7 @@ class SendWhatsAppTemplateView(View):
                 templates = response.json().get('data',[])
             else:
                 templates = []    
-                print("❌ Error fetching templates:", response.text)
+                # print("❌ Error fetching templates:", response.text)
 
             return render(request,'whatsapp/interface.html',{
                 'categories':categories,
@@ -735,25 +735,22 @@ class SendWhatsAppTemplateView(View):
             expected_header_type = getattr(template_obj, "header_type", None)  # Safe access from DB
 
             # 1. Determine MIME and real header type if media is uploaded
-            print(template_obj,'helooooooooooooooooooooooo')
             if media:
                 mime_type = media.content_type
 
                 if not mime_type:
-                    print('///////////////////////////////////////////')
                     mime_type, _ = mimetypes.guess_type(media.name)
 
-                print(mime_type,'mime typeeeeeeeeeeee')
                     
                 real_header_type = guess_header_type(mime_type)
 
-                print("🧾 DEBUG: --- Incoming Media Info ---")
-                print("📎 File Name:", media.name)
-                print("🧪 MIME Type:", mime_type)
-                print("📦 Guessed Header Type:", real_header_type)
-                print("📄 Template Expects:", expected_header_type)
-                print("📍 Final Header Type Used:", header_type)
-                print("📤 Uploading to Meta from path:", local_path if 'local_path' in locals() else "Not saved yet")
+                # print("🧾 DEBUG: --- Incoming Media Info ---")
+                # print("📎 File Name:", media.name)
+                # print("🧪 MIME Type:", mime_type)
+                # print("📦 Guessed Header Type:", real_header_type)
+                # print("📄 Template Expects:", expected_header_type)
+                # print("📍 Final Header Type Used:", header_type)
+                # print("📤 Uploading to Meta from path:", local_path if 'local_path' in locals() else "Not saved yet")
 
 
                 # Validate header type matches actual uploaded type
@@ -764,7 +761,6 @@ class SendWhatsAppTemplateView(View):
                     
                 header_type = real_header_type
             else:
-                print('no mediaaaaaaaaaaaaaaaaaaaaaaa')
                 header_type = expected_header_type # fallback to template value if no media uploaded
 
             if media and template_obj:
@@ -799,7 +795,7 @@ class SendWhatsAppTemplateView(View):
                 else:
                     return JsonResponse({"error": "Failed to upload media to Meta."}, status=500)
             
-                print("🧾 Meta upload response:", upload_response.status_code, upload_response.text)
+                # print("🧾 Meta upload response:", upload_response.status_code, upload_response.text)
 
 
             # If no new media, use stored image from template (if exists)
@@ -869,8 +865,8 @@ class SendWhatsAppTemplateView(View):
                     json=payload
                 )
 
-                print("📬 WhatsApp Send Payload:", json.dumps(payload, indent=2))
-                print("📬 WhatsApp Response:", response.status_code, response.text)
+                # print("📬 WhatsApp Send Payload:", json.dumps(payload, indent=2))
+                # print("📬 WhatsApp Response:", response.status_code, response.text)
 
 
                 if response.status_code == 200:
@@ -891,7 +887,7 @@ class SendWhatsAppTemplateView(View):
                     )
                 else:
                     failed.append({"number": number, "error": response.text})
-                    print(f"❌ Failed to send to {number}:", response.text)
+                    # print(f"❌ Failed to send to {number}:", response.text)
 
             return JsonResponse({
                 "success": success,
@@ -900,5 +896,44 @@ class SendWhatsAppTemplateView(View):
             }, status=200)
 
         except Exception as e:
-            print('nooooooooooooo❌ Exception:', str(e))
+            # print('nooooooooooooo❌ Exception:', str(e))
             return JsonResponse({"error": str(e)}, status=500)
+        
+
+@csrf_exempt
+def get_sent_messages(request):
+
+    token = request.GET.get('token')
+    if token != settings.WHATSAPP_TOKEN:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    if request.method == 'GET':
+        # Filter only messages sent by you
+        messages = WhatsAppMessage.objects.filter(
+            msg_sent_by=settings.PHONE_NUMBER_ID,      # Replace with your user ID or make dynamic
+        ).order_by('-created_date')[:100]
+
+        data = []
+        for msg in messages:
+            data.append({
+                'msg_id': msg.msg_id,
+                'id_phone': msg.id_phone,
+                'ournum': msg.ournum,
+                'usernumber': msg.usernumber,
+                'msg_body': msg.msg_body,
+                'msg_status': msg.msg_status,
+                'msg_type': msg.msg_type,
+                'array_testing': msg.array_testing,
+                'timestamp': msg.timestamp,
+                'mime_type': msg.mime_type,
+                'sha256': msg.sha256,
+                'local_date_time': msg.local_date_time,
+                'filename': msg.filename,
+                'send_id': msg.send_id,
+                'status': msg.status,
+                'funnel_id': msg.funnel_id,
+                'is_read': msg.is_read
+            })
+        return JsonResponse({'messages': data}, safe=False)
+
+    return JsonResponse({'error': 'Only GET method allowed'}, status=405)

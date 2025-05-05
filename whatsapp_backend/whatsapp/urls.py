@@ -11,6 +11,8 @@ urlpatterns = [
     path("fetch-messages/", views.FetchMessagesAPI.as_view(), name="fetch_messages"),
     path("fetch_users/", views.FetchChatUsersView.as_view(), name="fetch_users"),
     path('update-lead-status/', views.update_lead_status, name='update_lead_status'),
+    # api to fetch sended message 
+    path('api/get-sent-messages/', views.get_sent_messages, name='get_sent_messages'),
 
     # Template message
     path('message_categories/', views.FetchCategoriesView.as_view(), name='get_all_categories'),
