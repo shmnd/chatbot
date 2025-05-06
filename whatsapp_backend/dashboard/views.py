@@ -137,30 +137,27 @@ def category_list_create_view(request):
 
         if name and message:
             category = Categories.objects.create(name=name, messages=message)
-            
-            # Assign selected templates to this category
             WhatsAppTemplate.objects.filter(id__in=template_ids).update(category=category)
 
         return redirect("home:category_module")
 
     categories = Categories.objects.all()
-
     for category in categories:
         category.template_ids = ",".join(map(str, category.templates.values_list('id', flat=True)))
 
-    templates = WhatsAppTemplate.objects.filter(category__isnull=True,template_status="APPROVED") # only unassigned templates
-    
-    return render(request, "dashboard/category.html", {"categories": categories,"templates": templates})
+    # ✅ FIXED: Load ALL APPROVED templates, not just unassigned
+    templates = WhatsAppTemplate.objects.filter(template_status="APPROVED")
 
+    return render(request, "dashboard/category.html", {
+        "categories": categories,
+        "templates": templates,
+        "selected_template_ids": []  # empty by default
+    })
 
 def delete_category(request, pk):
     category_obj = get_object_or_404(Categories, pk=pk)
     category_obj.delete()
-    
-    categorys = Categories.objects.all()
-    return render(request, "dashboard/category.html", {
-        "categorys": categorys
-    })
+    return redirect("home:category_module")
 
 
 @csrf_exempt
@@ -172,33 +169,25 @@ def update_category(request, pk):
         message = request.POST.get("category_message")
         template_ids = request.POST.getlist("templates")
 
-        category_obj.name = name 
-        category_obj.messages = message 
+        category_obj.name = name
+        category_obj.messages = message
         category_obj.save()
-        
-        # Unassign templates from this category first
+
+        # Remove old templates
         WhatsAppTemplate.objects.filter(category=category_obj).update(category=None)
 
-        # Re-assign selected ones
+        # Assign new templates
         WhatsAppTemplate.objects.filter(id__in=template_ids).update(category=category_obj)
 
-        categories = Categories.objects.all()
+        return redirect("home:category_module")
 
-        for category in categories:
-            category.template_ids = ",".join(map(str, category.templates.values_list('id', flat=True))) 
-
-        # ✅ Fetch templates assigned to this category OR unassigned
-        templates = WhatsAppTemplate.objects.filter(category__isnull=True)
-        return render(request, "dashboard/category.html", {
-            "categories": categories,
-            'templates': templates
-        })
-
-
-    # For GET request, return current filter name
+    # GET request — AJAX call to fetch selected template ids
+    template_ids = list(category_obj.templates.values_list('id', flat=True))
     return JsonResponse({
+        "id": category_obj.id,
         "name": category_obj.name,
-        "messages": category_obj.messages
+        "messages": category_obj.messages,
+        "template_ids": template_ids
     })
 
 
